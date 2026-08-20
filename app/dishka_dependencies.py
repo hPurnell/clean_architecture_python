@@ -1,3 +1,5 @@
+from collections.abc import Iterator
+
 from dishka import Provider, Scope, provide, from_context
 
 from app.auth.domain import AbstractUserRepository
@@ -15,8 +17,9 @@ class AppProvider(Provider):
         return FakeUserRepository()
 
     @provide(scope=Scope.REQUEST)
-    async def unit_of_work(self) -> AbstractUnitOfWork:
-        return UnitOfWork()
+    def unit_of_work(self) -> Iterator[AbstractUnitOfWork]:
+        with UnitOfWork() as unit_of_work:
+            yield unit_of_work
 
     @provide(scope=Scope.REQUEST)
     async def item_command_publisher(
@@ -33,8 +36,9 @@ class UnitTestProvider(Provider):
         return FakeUserRepository()
 
     @provide(scope=Scope.REQUEST)
-    async def unit_of_work(self) -> AbstractUnitOfWork:
-        return FakeUnitOfWork()
+    def unit_of_work(self) -> Iterator[AbstractUnitOfWork]:
+        with FakeUnitOfWork() as unit_of_work:
+            yield unit_of_work
 
     @provide(scope=Scope.REQUEST)
     async def item_command_publisher(
@@ -51,8 +55,9 @@ class IntegrationTestProvider(Provider):
         return FakeUserRepository()
 
     @provide(scope=Scope.REQUEST)
-    async def unit_of_work(self) -> AbstractUnitOfWork:
-        return FakeUnitOfWork()
+    def unit_of_work(self) -> Iterator[AbstractUnitOfWork]:
+        with FakeUnitOfWork() as unit_of_work:
+            yield unit_of_work
 
     @provide(scope=Scope.REQUEST)
     async def item_command_publisher(
