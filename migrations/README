@@ -1,0 +1,8 @@
+Alembic migrations for this application.
+
+env.py takes the database URL from app.config, so alembic.ini holds no
+connection string. Every entity must be imported in
+app/shared/persistence/entities.py or autogenerate cannot see its table.
+
+See the "Database migrations" section of the project readme for the commands
+and for what the migration tests check.

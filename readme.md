@@ -73,13 +73,79 @@ docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:4.0-man
 
         pip install -r requirements.txt
 
-4. Run the server
+4. Create the database schema
+
+        alembic upgrade head
+
+5. Run the server
 
         litestar run
 
     _or alternatively_
 
         uvicorn app.main:app --reload
+
+## Database migrations
+
+The schema is owned by [Alembic](https://alembic.sqlalchemy.org/). The database
+is never changed by hand and the application never creates its own tables:
+every change is a reviewable file in `migrations/versions`, applied in order.
+
+Alembic reads `DATABASE_URL` from `app.config` — the same setting the
+application uses — so `alembic.ini` holds no connection string and no password.
+
+### Everyday use
+
+Bring a database up to date:
+
+        alembic upgrade head
+
+After changing an entity, write the migration for it:
+
+        alembic revision --autogenerate -m "add supplier to items"
+
+Autogenerate diffs the entities against the live database and writes the
+`op.*` calls itself. **Read what it produced before committing it** — it is a
+very good first draft, not an oracle. It does not see a rename (that is a drop
+plus an add), and it never writes the data migration that a change of meaning
+needs.
+
+Inspect, undo, and see where a database stands:
+
+        alembic history            # the revisions, newest first
+        alembic current            # what this database has applied
+        alembic downgrade -1       # step back one revision
+
+### Against a database this machine cannot reach
+
+        alembic upgrade head --sql > upgrade.sql
+
+Offline mode emits the SQL rather than running it, for a database whose
+credentials belong to somebody else.
+
+### Adding an aggregate
+
+A new entity must be imported in `app/shared/persistence/entities.py`.
+Autogenerate can only write a migration for a table it can see, and it sees
+`Base.metadata` — which holds whatever has been imported.
+`tests/shared/persistence/test_entities.py` fails if that module is missing
+one, so a forgotten import is caught by the suite rather than by a missing
+table in production.
+
+### The check Django makes you remember to run
+
+`tests/shared/persistence/test_migrations.py` applies every migration to a
+scratch database and asserts that autogenerate then finds nothing left to do.
+An entity changed without a migration fails the test suite, naming the column:
+
+        Failed: The entities and the migrations disagree. Write a migration
+        with `alembic revision --autogenerate`:
+        New upgrade operations detected: [('add_column', None, 'items',
+        Column('drift_probe', String(length=10), table=<items>))]
+
+It also asserts every migration can be downgraded, so a bad deployment is
+reversible. These tests are marked `e2e` and skip when no database server is
+running.
 
 5. Go to: 
         http://127.0.0.1:8000/schema/elements
