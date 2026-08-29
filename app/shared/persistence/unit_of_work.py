@@ -1,5 +1,3 @@
-"""SQLAlchemy-backed unit of work."""
-
 from types import TracebackType
 from typing import Any, Callable, Mapping, Optional, Type, TypeVar, cast
 

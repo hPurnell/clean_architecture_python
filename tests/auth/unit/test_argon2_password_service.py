@@ -1,9 +1,3 @@
-"""The Argon2 adapter, on its own.
-
-The costs are turned right down here: these tests are about what the adapter
-does with the library's answers, not about how long a real login should take.
-"""
-
 import pytest
 from argon2 import PasswordHasher
 
@@ -12,6 +6,8 @@ from app.auth.service.argon2_password_service import Argon2PasswordService
 PASSWORD = "correct horse battery staple"
 
 
+# Costs are turned right down: these tests are about what the adapter does with
+# the library's answers, not about how long a real login should take.
 def cheap_password_service(**parameters) -> Argon2PasswordService:
     return Argon2PasswordService(
         PasswordHasher(

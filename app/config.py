@@ -1,11 +1,3 @@
-"""Application settings.
-
-This module holds configuration *data* only. It deliberately builds no engines,
-sessions, or connections: infrastructure is constructed by the composition root
-(``app.dishka_dependencies``) so that it can be configured per environment and
-so that importing settings does not require a reachable database.
-"""
-
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 

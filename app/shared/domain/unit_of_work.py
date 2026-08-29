@@ -1,16 +1,3 @@
-"""The application-wide unit of work port.
-
-A unit of work is a transaction boundary for the *whole* application, not for a
-single aggregate, so this abstraction knows nothing about items, users, or any
-other aggregate. Concrete implementations are given the repositories they
-should expose at construction time, and callers look one up by its port type::
-
-    items = unit_of_work.repository(AbstractItemRepository)
-
-Adding a new aggregate therefore means registering one more repository in the
-composition root, with no change to this class or to any existing aggregate.
-"""
-
 from abc import ABC, abstractmethod
 from types import TracebackType
 from typing import Optional, Type, TypeVar
@@ -18,6 +5,10 @@ from typing import Optional, Type, TypeVar
 TRepository = TypeVar("TRepository")
 
 
+# A transaction boundary for the whole application rather than for one
+# aggregate, so this port names no aggregate: implementations are handed the
+# repositories they expose, and callers look one up by its port type. Adding an
+# aggregate means registering a repository in the composition root, nothing here.
 class AbstractUnitOfWork(ABC):
     @abstractmethod
     def __enter__(self) -> "AbstractUnitOfWork": ...

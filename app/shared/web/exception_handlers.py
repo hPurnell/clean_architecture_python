@@ -1,10 +1,3 @@
-"""Translation of domain errors into HTTP responses.
-
-This is the only place that knows both vocabularies. Domain and service code
-raises ``DomainError`` subclasses; the mapping below turns them into status
-codes so that no inner layer has to import a web framework.
-"""
-
 import logging
 from collections.abc import Callable, MutableMapping
 from typing import Any

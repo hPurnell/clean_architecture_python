@@ -1,13 +1,6 @@
-"""Domain-level error types.
-
-These are deliberately free of any transport or framework concepts. The web
-layer maps them onto HTTP status codes in
-``app.shared.web.exception_handlers``; the messaging layer lets them propagate
-to the broker. Nothing in a domain or service module should raise an
-``HTTPException``.
-"""
-
-
+# Free of transport concepts on purpose: nothing in a domain or service module
+# should raise an HTTPException. The web layer maps these to status codes in
+# app.shared.web.exception_handlers; the messaging layer lets them propagate.
 class DomainError(Exception):
     """Base class for every error the domain and service layers raise."""
 

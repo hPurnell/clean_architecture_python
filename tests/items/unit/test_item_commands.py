@@ -1,5 +1,3 @@
-"""The wire contract: what a command carries, and what it maps back to."""
-
 import json
 from dataclasses import fields
 from datetime import datetime

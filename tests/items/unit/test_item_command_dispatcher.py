@@ -1,5 +1,3 @@
-"""Dispatching an item command, without a broker behind it."""
-
 from typing import Any
 
 import pytest

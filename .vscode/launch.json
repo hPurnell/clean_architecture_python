@@ -24,6 +24,12 @@
                 "--reload"
             ],
             "jinja": true
+        },
+        {
+            "name": "Nuke .pyc / __pycache__",
+            "type": "node-terminal",
+            "request": "launch",
+            "command": "find . -path ./.venv -prune -o -type d -name __pycache__ -print0 | xargs -0 -r rm -rf && find . -path ./.venv -prune -o -type f -name '*.pyc' -print0 | xargs -0 -r rm -f && echo 'pyc/__pycache__ cleaned'"
         }
     ]
 }

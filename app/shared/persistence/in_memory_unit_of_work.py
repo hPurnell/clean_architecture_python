@@ -1,11 +1,3 @@
-"""In-memory unit of work, used to run the application without a database.
-
-The repositories are supplied by the composition root rather than created here,
-so their lifetime — and therefore how long the data survives — is a wiring
-decision. The test container binds them at application scope, which gives every
-test app instance its own isolated store.
-"""
-
 from types import TracebackType
 from typing import Any, Mapping, Optional, Type, TypeVar, cast
 
@@ -15,6 +7,9 @@ TRepository = TypeVar("TRepository")
 
 
 class InMemoryUnitOfWork(AbstractUnitOfWork):
+    # Repositories are injected rather than created here, so how long the data
+    # survives is a wiring decision: the test container binds them at app scope,
+    # giving each test app instance its own isolated store.
     def __init__(self, repositories: Mapping[Type[Any], Any]) -> None:
         self._repositories = dict(repositories)
 

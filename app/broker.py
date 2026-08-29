@@ -1,16 +1,3 @@
-"""Message broker selection.
-
-The concrete FastStream broker is chosen here, from configuration, rather than
-being hard-coded in ``app/__init__.py``. Two things follow from that:
-
-* importing anything under ``app.`` no longer drags in a broker driver, and
-* switching broker is a configuration change (``MESSAGE_BROKER_TYPE``) rather
-  than an edit to the root package.
-
-Drivers are imported lazily so that only the selected backend needs to be
-installed.
-"""
-
 from importlib import import_module
 from typing import Any
 
@@ -32,6 +19,7 @@ def _load_backend(name: str) -> tuple[type[Any], type[Any]]:
         raise ValueError(
             f"Unsupported MESSAGE_BROKER_TYPE {name!r}. Supported: {supported}."
         ) from None
+    # Imported lazily so only the selected backend's driver needs installing.
     module = import_module(module_path)
     return getattr(module, broker_name), getattr(module, router_name)
 

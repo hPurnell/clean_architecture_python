@@ -4,5 +4,5 @@ __pycache__/
 *.pyc
 .env
 .pytest_lock
-.mypy_cache
-.rufF_cache
+.mypy_cache/
+.ruff_cache/

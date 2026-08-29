@@ -1,13 +1,3 @@
-"""Create the database tables defined by the ORM entities.
-
-Usage:
-    python create_tables.py             # create missing tables
-    python create_tables.py --drop      # drop every table first, then create
-    python create_tables.py --drop --yes  # same, without the confirmation prompt
-
-``--drop`` destroys all data in the target database.
-"""
-
 import argparse
 import sys
 
@@ -38,7 +28,9 @@ def confirm_drop(database_url: str) -> bool:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser = argparse.ArgumentParser(
+        description="Create the database tables defined by the ORM entities."
+    )
     parser.add_argument(
         "--drop",
         action="store_true",

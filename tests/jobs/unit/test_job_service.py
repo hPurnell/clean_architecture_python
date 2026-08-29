@@ -1,5 +1,3 @@
-"""Job lifecycle, exercised without a broker or a database."""
-
 import pytest
 
 from app.items.db.fake_item_repository import FakeItemRepository

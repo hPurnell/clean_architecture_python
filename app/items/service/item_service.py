@@ -1,11 +1,3 @@
-"""Item use cases.
-
-Every rule about items lives here: what counts as "not found", when a change is
-committed, what happens when the repository refuses a write. Both the HTTP
-controller and the message subscriber call these methods, so the two transports
-cannot drift apart, and neither of them needs to know about transactions.
-"""
-
 from app.items.domain.abstract_item_repository import AbstractItemRepository
 from app.items.domain.errors import (
     ItemIdRequiredError,

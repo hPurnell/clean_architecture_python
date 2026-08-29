@@ -4,7 +4,7 @@ from dishka.integrations.litestar import FromDishka, inject
 from litestar import Controller, Response, post
 
 from app.auth.controllers.auth_dto import AuthRequest, AuthResponse
-from app.auth.service.auth_service import AuthService
+from app.auth.domain.abstract_auth_service import AbstractAuthService
 
 
 class AuthController(Controller):
@@ -14,7 +14,7 @@ class AuthController(Controller):
     @post(path="/auth/login", exclude_from_auth=True)
     @inject
     async def login(
-        self, data: AuthRequest, auth_service: FromDishka[AuthService]
+        self, data: AuthRequest, auth_service: FromDishka[AbstractAuthService]
     ) -> Response[Any]:
         token = auth_service.login(data.username, data.password)
         return Response(

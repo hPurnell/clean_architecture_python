@@ -1,10 +1,3 @@
-"""Composition root.
-
-Every concrete choice the application makes — which database, which broker,
-which repository implementation — is made here and nowhere else. Inner layers
-depend only on the ports these providers satisfy.
-"""
-
 from collections.abc import Iterator
 from typing import Any, Callable, Mapping, Type
 
@@ -12,6 +5,7 @@ from dishka import Provider, Scope, from_context, provide
 from sqlalchemy.orm import Session, sessionmaker
 
 from app.auth.db.fake_user_respository import FakeUserRepository
+from app.auth.domain.abstract_auth_service import AbstractAuthService
 from app.auth.domain.abstract_password_service import AbstractPasswordService
 from app.auth.domain.abstract_token_service import AbstractTokenService
 from app.auth.domain.abstract_user_respository import AbstractUserRepository
@@ -100,7 +94,7 @@ class AppProvider(Provider):
         user_repository: AbstractUserRepository,
         token_service: AbstractTokenService,
         password_service: AbstractPasswordService,
-    ) -> AuthService:
+    ) -> AbstractAuthService:
         return AuthService(user_repository, token_service, password_service)
 
     @provide(scope=Scope.REQUEST)
@@ -179,7 +173,7 @@ class UnitTestProvider(Provider):
         user_repository: AbstractUserRepository,
         token_service: AbstractTokenService,
         password_service: AbstractPasswordService,
-    ) -> AuthService:
+    ) -> AbstractAuthService:
         return AuthService(user_repository, token_service, password_service)
 
     @provide(scope=Scope.REQUEST)
@@ -255,7 +249,7 @@ class IntegrationTestProvider(Provider):
         user_repository: AbstractUserRepository,
         token_service: AbstractTokenService,
         password_service: AbstractPasswordService,
-    ) -> AuthService:
+    ) -> AbstractAuthService:
         return AuthService(user_repository, token_service, password_service)
 
     @provide(scope=Scope.REQUEST)

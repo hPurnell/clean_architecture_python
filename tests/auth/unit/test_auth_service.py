@@ -1,5 +1,3 @@
-"""Logging in, with the real hasher and no transport."""
-
 import pytest
 
 from app.auth.db.fake_user_respository import DEFAULT_PASSWORD, FakeUserRepository

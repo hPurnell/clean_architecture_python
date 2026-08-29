@@ -1,3 +1,4 @@
+from app.auth.domain.abstract_auth_service import AbstractAuthService
 from app.auth.domain.abstract_password_service import AbstractPasswordService
 from app.auth.domain.abstract_token_service import AbstractTokenService
 from app.auth.domain.abstract_user_respository import AbstractUserRepository
@@ -5,7 +6,7 @@ from app.auth.domain.errors import InvalidCredentialsError
 from app.auth.domain.token import Token
 
 
-class AuthService:
+class AuthService(AbstractAuthService):
     def __init__(
         self,
         user_repository: AbstractUserRepository,
