@@ -4,11 +4,7 @@ from datetime import datetime
 from app.items.domain.errors import ItemIdRequiredError
 from app.items.domain.item import Item
 
-# The commands are deliberately not the Item entity: publishing the domain
-# object would make every change to it a breaking change on the wire. Version 2
-# added the job_id a command reports its outcome against, so these are not
-# readable by a version 1 subscriber.
-ITEM_COMMAND_SCHEMA_VERSION = 2
+ITEM_COMMAND_SCHEMA_VERSION = 1
 
 
 @dataclass(kw_only=True)
@@ -17,13 +13,6 @@ class ItemCommand:
 
     job_id: str
     schema_version: int = ITEM_COMMAND_SCHEMA_VERSION
-
-
-# Each command spells out its own wire shape. The three value fields repeat
-# across CreateItemCommand and UpdateItemCommand on purpose: this is the
-# contract that goes on the bus, and it should be readable in one place without
-# following a mixin. A field renamed on Item is then a type error in the
-# mappers below, not a silent mismatch.
 
 
 @dataclass(kw_only=True)
