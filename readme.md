@@ -141,8 +141,16 @@ pre-commit run --all-files
 ```
 
 ## Tests
-Tests are located in the tests directory. To run the tests:
+Tests are located in the tests directory. To run the whole suite in parallel:
 
-        pytest -n auto
+        pytest -n auto --dist loadgroup
 
-`-n auto` runs the tests across xdist worker processes, so each has its own mock database — the integration/E2E tests assert database state. The item integration tests share one RabbitMQ broker, so they carry `@pytest.mark.xdist_group("item_integration")`; with `--dist loadgroup` (set in `pytest.ini`) xdist keeps that whole group on a single worker.
+`-n auto` runs the tests across xdist worker processes, so each has its own mock
+database — the integration/E2E tests assert database state. The item integration
+tests share one RabbitMQ broker, so they carry
+`@pytest.mark.xdist_group("item_integration")`; `--dist loadgroup` is what makes
+xdist honour that and keep the whole group on a single worker. Without it the
+group mark is inert.
+
+Plain `pytest` (no `-n`) runs everything serially and is what the VS Code test
+runner uses — xdist and the editor's per-test execution/debugging do not mix.
