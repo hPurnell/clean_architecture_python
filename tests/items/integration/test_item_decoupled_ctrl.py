@@ -1,7 +1,41 @@
+import time
+from typing import Any
+
 import pytest
+from litestar import Litestar
 from litestar.testing import TestClient
 
-from app.utils.lock_test import lock_test
+# The command is carried out by a subscriber in its own task, so the job is the
+# only thing the test can synchronise on.
+JOB_TIMEOUT_SECONDS = 10.0
+JOB_POLL_SECONDS = 0.05
+
+
+def wait_for_job(client: TestClient[Litestar], job_id: str) -> dict[str, Any]:
+    """Poll a job until it reports an outcome, and return it."""
+    deadline = time.monotonic() + JOB_TIMEOUT_SECONDS
+    while True:
+        response = client.get(f"/jobs/{job_id}")
+        assert response.is_success
+        job: dict[str, Any] = response.json()
+        if job["Status"] in ("SUCCEEDED", "FAILED"):
+            return job
+        if time.monotonic() >= deadline:
+            raise AssertionError(
+                f"Job {job_id} was still {job['Status']} after "
+                f"{JOB_TIMEOUT_SECONDS}s"
+            )
+        time.sleep(JOB_POLL_SECONDS)
+
+
+def dispatch(client: TestClient[Litestar], method: str, path: str, **kwargs) -> str:
+    """Send a decoupled command and return the id of the job it was given."""
+    response = client.request(method, path, **kwargs)
+    assert response.status_code == 202
+    job = response.json()
+    assert job["Id"]
+    assert job["Status"] == "PENDING"
+    return str(job["Id"])
 
 
 @pytest.mark.separate
@@ -13,73 +47,78 @@ class TestItemDecoupledCtrlIntegration:
 
     def test_post_item(
         self,
-        fixture_integration_test_client_with_auth: TestClient,
-        fixture_new_item: dict,
+        fixture_integration_test_client_with_auth: TestClient[Litestar],
+        fixture_new_item: dict[str, Any],
     ):
         client = fixture_integration_test_client_with_auth
 
-        # POST item 1, passing the dictionary directly as the request body
-        response = client.post("/items_decoupled", json=fixture_new_item)
-        assert response.is_success
+        job_id = dispatch(client, "POST", "/items_decoupled", json=fixture_new_item)
 
-        response = client.get("/items")
-        response_json = response.json()
+        job = wait_for_job(client, job_id)
+        assert job["Status"] == "SUCCEEDED"
+        assert job["Command"] == "create_item"
+        assert job["Error"] is None
+
+        # The job's result is the id of the item the command created.
+        response = client.get(f"/items/{job['Result']}")
         assert response.is_success
-        assert len(response_json) == 1  # Adjusted to match one item for this test case
-        assert response_json[0]["Id"] is not None
+        assert response.json()["ValueStr"] == fixture_new_item["ValueStr"]
 
     def test_delete_item(
         self,
-        fixture_integration_test_client_with_auth: TestClient,
-        fixture_new_item: dict,
+        fixture_integration_test_client_with_auth: TestClient[Litestar],
+        fixture_new_item: dict[str, Any],
     ):
-        response = fixture_integration_test_client_with_auth.post(
-            "/items_decoupled",
-            json=fixture_new_item,  # Pass the dictionary directly
-        )
-        assert response.is_success
+        client = fixture_integration_test_client_with_auth
 
-        response = fixture_integration_test_client_with_auth.get("/items")
-        assert response.is_success
-        item_id = response.json()[0]["Id"]
+        job_id = dispatch(client, "POST", "/items_decoupled", json=fixture_new_item)
+        item_id = wait_for_job(client, job_id)["Result"]
 
-        response = fixture_integration_test_client_with_auth.delete(
-            f"/items_decoupled/{item_id}"
-        )
-        assert response.is_success
+        job_id = dispatch(client, "DELETE", f"/items_decoupled/{item_id}")
 
-        response = fixture_integration_test_client_with_auth.get("/items")
+        assert wait_for_job(client, job_id)["Status"] == "SUCCEEDED"
+        response = client.get("/items")
         assert response.is_success
         assert len(response.json()) == 0
 
     def test_patch_item(
         self,
-        fixture_integration_test_client_with_auth: TestClient,
-        fixture_new_item: dict,
-        fixture_update_item: dict,
+        fixture_integration_test_client_with_auth: TestClient[Litestar],
+        fixture_new_item: dict[str, Any],
+        fixture_update_item: dict[str, Any],
     ):
-        response = fixture_integration_test_client_with_auth.post(
-            "/items_decoupled",
-            json=fixture_new_item,  # Pass the dictionary directly
-        )
-        assert response.is_success
+        client = fixture_integration_test_client_with_auth
 
-        response = fixture_integration_test_client_with_auth.get("/items")
-        assert response.is_success
-        item_id = response.json()[0]["Id"]
+        job_id = dispatch(client, "POST", "/items_decoupled", json=fixture_new_item)
+        item_id = wait_for_job(client, job_id)["Result"]
 
         update_item = fixture_update_item
-        update_item["Id"] = item_id  # Modify the update item to include the ID
-        response = fixture_integration_test_client_with_auth.patch(
-            "/items_decoupled",
-            json=update_item,  # Send the updated item as JSON
-        )
+        update_item["Id"] = int(item_id)
+        job_id = dispatch(client, "PATCH", "/items_decoupled", json=update_item)
+
+        assert wait_for_job(client, job_id)["Status"] == "SUCCEEDED"
+        response = client.get(f"/items/{item_id}")
         assert response.is_success
-
-        response = fixture_integration_test_client_with_auth.get("/items")
-        item = response.json()[0]
-
-        assert item["Id"] == item_id
+        item = response.json()
         assert item["ValueStr"] == update_item["ValueStr"]
         assert item["ValueInt"] == update_item["ValueInt"]
         assert item["ValueFloat"] == update_item["ValueFloat"]
+
+    def test_a_command_that_cannot_be_carried_out_fails_its_job(
+        self, fixture_integration_test_client_with_auth: TestClient[Litestar]
+    ):
+        # The request itself is accepted — nothing has looked for the item yet.
+        # The failure is reported on the job, and only there.
+        client = fixture_integration_test_client_with_auth
+
+        job_id = dispatch(client, "DELETE", "/items_decoupled/999999")
+
+        job = wait_for_job(client, job_id)
+        assert job["Status"] == "FAILED"
+        assert "999999" in job["Error"]
+
+    def test_get_unknown_job(
+        self, fixture_integration_test_client_with_auth: TestClient[Litestar]
+    ):
+        response = fixture_integration_test_client_with_auth.get("/jobs/no-such-job")
+        assert response.status_code == 404

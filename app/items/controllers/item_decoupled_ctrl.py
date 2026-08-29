@@ -1,46 +1,49 @@
-import logging
-
+from dishka.integrations.litestar import FromDishka, inject
 from litestar.controller import Controller
 from litestar.handlers.http_handlers.decorators import delete, patch, post
-from litestar.exceptions import HTTPException
-from dishka.integrations.litestar import inject, FromDishka
+from litestar.status_codes import HTTP_202_ACCEPTED
 
-from app.items.domain import Item, AbstractItemCommandPublisher
-from app.items.controllers import NewItemDTO, UpdateItemDTO
-
-logger = logging.getLogger(__name__)
+from app.items.controllers.item_dto import NewItemDTO, UpdateItemDTO
+from app.items.domain.item import Item
+from app.items.service.item_command_dispatcher import ItemCommandDispatcher
+from app.jobs.controllers.job_dto import JobDTO
+from app.jobs.domain.job import Job
 
 
 class ItemsCommandsDecoupledCtrl(Controller):
+    """The same commands as /items, published instead of carried out.
+
+    Each handler answers 202 with a job; the client polls /jobs/{job_id} and
+    follows the job's Result to the item.
+    """
+
     path = "/items_decoupled"
     tags = ["Items Commands Decoupled"]
+    return_dto = JobDTO
 
-    @post(path="", dto=NewItemDTO)
+    @post(path="", dto=NewItemDTO, status_code=HTTP_202_ACCEPTED)
     @inject
     async def post_item(
         self,
         data: Item,
-        item_command_publisher: FromDishka[AbstractItemCommandPublisher],
-    ) -> None:
-        await item_command_publisher.create_item(data)
-        return
+        item_command_dispatcher: FromDishka[ItemCommandDispatcher],
+    ) -> Job:
+        return await item_command_dispatcher.create_item(data)
 
-    @patch(path="", dto=UpdateItemDTO)
+    @patch(path="", dto=UpdateItemDTO, status_code=HTTP_202_ACCEPTED)
     @inject
     async def patch_item(
         self,
         data: Item,
-        item_command_publisher: FromDishka[AbstractItemCommandPublisher],
-    ) -> None:
-        await item_command_publisher.update_item(data)
-        return
+        item_command_dispatcher: FromDishka[ItemCommandDispatcher],
+    ) -> Job:
+        return await item_command_dispatcher.update_item(data)
 
-    @delete(path="/{item_id:int}")
+    @delete(path="/{item_id:int}", status_code=HTTP_202_ACCEPTED)
     @inject
     async def delete_item(
         self,
         item_id: int,
-        item_command_publisher: FromDishka[AbstractItemCommandPublisher],
-    ) -> None:
-        await item_command_publisher.delete_item(item_id)
-        return
+        item_command_dispatcher: FromDishka[ItemCommandDispatcher],
+    ) -> Job:
+        return await item_command_dispatcher.delete_item(item_id)

@@ -1,12 +1,16 @@
-from typing import Type, TypeVar, Generic, Optional, Union, Any, List
-from dataclasses import fields, asdict
+from dataclasses import asdict, fields
+from typing import TYPE_CHECKING, Any, Generic, List, Optional, Type, TypeVar, Union
 
-from sqlalchemy.orm import Session
 from sqlalchemy import select
 from sqlalchemy.inspection import inspect
+from sqlalchemy.orm import Session
+
+if TYPE_CHECKING:
+    from _typeshed import DataclassInstance
 
 TEntity = TypeVar("TEntity")
-TDataclass = TypeVar("TDataclass")
+# Every mapped dataclass, so that asdict() and fields() apply to it.
+TDataclass = TypeVar("TDataclass", bound="DataclassInstance")
 
 
 class BaseRepository(Generic[TEntity, TDataclass]):
@@ -25,6 +29,8 @@ class BaseRepository(Generic[TEntity, TDataclass]):
             self.pk_fields = pk_fields
         else:
             mapper = inspect(self.entity_class)
+            if mapper is None:
+                raise ValueError("Entity is not a mapped class.")
             self.pk_fields = [col.name for col in mapper.primary_key]
             if not self.pk_fields:
                 raise ValueError("Entity has no primary key fields.")
@@ -38,10 +44,12 @@ class BaseRepository(Generic[TEntity, TDataclass]):
             }
         )
 
-    def _get_pk_values(self, dataclass_instance: TDataclass) -> dict:
+    def _get_pk_values(self, dataclass_instance: TDataclass) -> dict[str, Any]:
         return {field: getattr(dataclass_instance, field) for field in self.pk_fields}
 
-    def _get_entity_by_pk(self, pk_values: Union[Any, dict]) -> Optional[TEntity]:
+    def _get_entity_by_pk(
+        self, pk_values: Union[Any, dict[str, Any]]
+    ) -> Optional[TEntity]:
         if isinstance(pk_values, dict):
             # Ensure all primary key fields are present in the input dictionary.
             missing_fields = [
@@ -57,7 +65,8 @@ class BaseRepository(Generic[TEntity, TDataclass]):
             # For a single value as primary key input
             if len(self.pk_fields) != 1:
                 raise ValueError(
-                    f"Expected composite key (dict with fields {self.pk_fields}), but got a single value."
+                    "Expected composite key (dict with fields "
+                    f"{self.pk_fields}), but got a single value."
                 )
             pk_dict = {self.pk_fields[0]: pk_values}
 
@@ -70,7 +79,9 @@ class BaseRepository(Generic[TEntity, TDataclass]):
         self.session.flush()
         return self._map_to_dataclass(entity)
 
-    def get(self, pk_values: Union[Any, tuple, dict]) -> Optional[TDataclass]:
+    def get(
+        self, pk_values: Union[Any, tuple[Any, ...], dict[str, Any]]
+    ) -> Optional[TDataclass]:
         entity = self._get_entity_by_pk(pk_values)
         return self._map_to_dataclass(entity) if entity else None
 
@@ -84,7 +95,7 @@ class BaseRepository(Generic[TEntity, TDataclass]):
             return self._map_to_dataclass(entity)
         return None
 
-    def delete(self, pk_values: Union[Any, tuple, dict]) -> bool:
+    def delete(self, pk_values: Union[Any, tuple[Any, ...], dict[str, Any]]) -> bool:
         entity = self._get_entity_by_pk(pk_values)
         if entity:
             self.session.delete(entity)

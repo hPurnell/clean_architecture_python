@@ -5,6 +5,7 @@ pydantic
 pydantic-settings
 litestar[standard]
 pyjwt[crypto]==2.10.1
+argon2-cffi
 mysql
 aio-pika
 faststream

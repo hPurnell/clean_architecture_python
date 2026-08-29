@@ -10,7 +10,15 @@ repos:
       - id: ruff
       - id: ruff-format
 
-  - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.8.0
+  # mypy runs from the project environment rather than mirrors-mypy: pre-commit
+  # builds that hook its own venv with none of the dependencies installed, so
+  # litestar, dishka, sqlalchemy and the rest resolve to Any and the report is
+  # mostly noise about untyped decorators and unsubclassable base classes.
+  - repo: local
     hooks:
       - id: mypy
+        name: mypy
+        entry: mypy app tests
+        language: system
+        types: [python]
+        pass_filenames: false

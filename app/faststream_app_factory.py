@@ -1,27 +1,22 @@
 from contextlib import asynccontextmanager
+from typing import Any, AsyncIterator
 
-from litestar import Litestar
 from faststream import FastStream
-from app import FastStreamBroker
+from litestar import Litestar
 
-from app.config import config
-from app.items.service import item_command_subscriber
-
-MESSAGE_BROKER_URL = config.MESSAGE_BROKER_URL
+from app.broker import create_broker
+from app.items.messaging import item_command_subscriber
 
 
 def create_faststream_app() -> FastStream:
-    broker = FastStreamBroker(
-        MESSAGE_BROKER_URL,
-    )
+    broker = create_broker()
     broker.include_router(item_command_subscriber.router)
-    faststream_app = FastStream(broker)
-    return faststream_app
+    return FastStream(broker)
 
 
 @asynccontextmanager
-async def lifespan_broker(app: Litestar):
-    broker = app.state.broker
+async def lifespan_broker(app: Litestar) -> AsyncIterator[None]:
+    broker: Any = app.state.broker
     await broker.start()
     try:
         yield

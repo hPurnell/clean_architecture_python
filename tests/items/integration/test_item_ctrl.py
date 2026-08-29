@@ -1,7 +1,8 @@
-import pytest
-from litestar.testing import TestClient
+from typing import Any
 
-from app.utils.lock_test import lock_test
+import pytest
+from litestar import Litestar
+from litestar.testing import TestClient
 
 
 @pytest.mark.separate
@@ -10,11 +11,11 @@ class TestItemCtrlIntegration:
     @pytest.fixture(autouse=True)
     def lock(self, lock_test):
         pass
-    
+
     def test_post_items_get_items(
         self,
-        fixture_integration_test_client_with_auth: TestClient,
-        fixture_new_item: dict,
+        fixture_integration_test_client_with_auth: TestClient[Litestar],
+        fixture_new_item: dict[str, Any],
     ):
         client = fixture_integration_test_client_with_auth
 
@@ -30,8 +31,8 @@ class TestItemCtrlIntegration:
 
     def test_post_item_get_item(
         self,
-        fixture_integration_test_client_with_auth: TestClient,
-        fixture_new_item: dict,
+        fixture_integration_test_client_with_auth: TestClient[Litestar],
+        fixture_new_item: dict[str, Any],
     ):
         response = fixture_integration_test_client_with_auth.post(
             "/items",
@@ -55,8 +56,8 @@ class TestItemCtrlIntegration:
 
     def test_delete_item(
         self,
-        fixture_integration_test_client_with_auth: TestClient,
-        fixture_new_item: dict,
+        fixture_integration_test_client_with_auth: TestClient[Litestar],
+        fixture_new_item: dict[str, Any],
     ):
         response = fixture_integration_test_client_with_auth.post(
             "/items",
@@ -76,16 +77,16 @@ class TestItemCtrlIntegration:
         assert len(response.json()) == 0
 
     def test_get_item_not_found(
-        self, fixture_integration_test_client_with_auth: TestClient
+        self, fixture_integration_test_client_with_auth: TestClient[Litestar]
     ):
         response = fixture_integration_test_client_with_auth.get("/items/999999")
         assert response.status_code == 404
 
     def test_patch_item(
         self,
-        fixture_integration_test_client_with_auth: TestClient,
-        fixture_new_item: dict,
-        fixture_update_item: dict,
+        fixture_integration_test_client_with_auth: TestClient[Litestar],
+        fixture_new_item: dict[str, Any],
+        fixture_update_item: dict[str, Any],
     ):
         response = fixture_integration_test_client_with_auth.post(
             "/items",

@@ -1,15 +1,12 @@
 import datetime
 
+from sqlalchemy import Column, DateTime, Float, Integer, String
 from sqlalchemy.orm import Session
-from sqlalchemy import Integer, String, Float, DateTime, Column
-from sqlalchemy.orm import declarative_base
 
-from app.utils.base_repository import BaseRepository
-from app.items.domain import AbstractItemRepository
-from app.items.domain import Item
-
-
-Base = declarative_base()
+from app.items.domain.abstract_item_repository import AbstractItemRepository
+from app.items.domain.item import Item
+from app.shared.persistence.base import Base
+from app.shared.persistence.repository import BaseRepository
 
 
 class ItemEntity(Base):

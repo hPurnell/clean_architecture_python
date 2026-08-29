@@ -1,11 +1,12 @@
-from app.items.domain import AbstractItemRepository
-from app.items.domain import Item
 from typing import Optional
+
+from app.items.domain.abstract_item_repository import AbstractItemRepository
+from app.items.domain.item import Item
 
 
 class FakeItemRepository(AbstractItemRepository):
-    def __init__(self):
-        self.items = {}  # In-memory storage for items
+    def __init__(self) -> None:
+        self.items: dict[int, Item] = {}  # In-memory storage for items
         self.next_id = 1  # To simulate auto-incrementing IDs
 
     def create(self, obj: Item) -> Item:

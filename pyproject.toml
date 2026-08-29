@@ -13,6 +13,18 @@ exclude = ["migrations", "venv", ".venv", "__pycache__"]
 python_version = "3.11"
 ignore_missing_imports = true
 strict = true
+# Looking a repository up by its port type is the point of the unit of work,
+# and every port is abstract by definition.
+disable_error_code = ["type-abstract"]
+
+[[tool.mypy.overrides]]
+# Test functions are discovered by name and called by pytest, so annotating
+# every one of them with "-> None" buys nothing. Their bodies are still checked
+# wherever they are annotated.
+module = "tests.*"
+disallow_untyped_defs = false
+disallow_incomplete_defs = false
+disallow_untyped_decorators = false
 
 [tool.pytest.ini_options]
 asyncio_mode = "strict"

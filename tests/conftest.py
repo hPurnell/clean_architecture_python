@@ -1,13 +1,14 @@
-from collections.abc import Iterator, AsyncGenerator
-from dataclasses import asdict
+from collections.abc import Iterator
 from datetime import datetime
+from typing import Any
 
 import pytest
 from litestar import Litestar
-from litestar.testing import TestClient, AsyncTestClient
+from litestar.testing import TestClient
 
-from app.litestar_app_factory import create_unit_test_app, create_integration_test_app
-from app.auth.db.fake_user_respository import FakeUserRepository
+from app.auth.db.fake_user_respository import DEFAULT_PASSWORD, FakeUserRepository
+from app.litestar_app_factory import create_integration_test_app, create_unit_test_app
+from app.utils.lock_test import lock_test  # noqa: F401  (a fixture, used by name)
 
 
 @pytest.fixture(scope="function")
@@ -19,7 +20,7 @@ def fixture_unit_test_client() -> Iterator[TestClient[Litestar]]:
 
 @pytest.fixture(scope="function")
 def fixture_unit_test_client_with_auth(
-    fixture_valid_credentials: dict,
+    fixture_valid_credentials: dict[str, Any],
 ) -> Iterator[TestClient[Litestar]]:
     app = create_unit_test_app()
     with TestClient(app=app) as client:
@@ -38,7 +39,7 @@ def fixture_integration_test_client() -> Iterator[TestClient[Litestar]]:
 
 @pytest.fixture(scope="function")
 def fixture_integration_test_client_with_auth(
-    fixture_valid_credentials: dict,
+    fixture_valid_credentials: dict[str, Any],
 ) -> Iterator[TestClient[Litestar]]:
     app = create_integration_test_app()
     with TestClient(app=app) as client:
@@ -50,8 +51,12 @@ def fixture_integration_test_client_with_auth(
 
 @pytest.fixture(scope="function")
 def fixture_valid_credentials():
+    # The stored user only has the hash, so the password comes from the
+    # constant the fake repository seeded itself from.
     mock_user_repository: FakeUserRepository = FakeUserRepository()
-    return asdict(mock_user_repository.get_user("john.doe@example.com"))
+    user = mock_user_repository.get_user("john.doe@example.com")
+    assert user is not None
+    return {"username": user.username, "password": DEFAULT_PASSWORD}
 
 
 @pytest.fixture(scope="function")
@@ -60,15 +65,16 @@ def fixture_invalid_credentials():
 
 
 @pytest.fixture
-def fixture_new_item() -> dict:
+def fixture_new_item() -> dict[str, Any]:
     # Create a NewItem instance and return as a dictionary with PascalCase fields
     item = {"ValueStr": "Example String", "ValueInt": 42, "ValueFloat": 123.45}
     return item  # Return the dictionary directly
 
 
 @pytest.fixture
-def fixture_update_item() -> dict:
-    # Create an UpdateItem instance and return as a dictionary with PascalCase fields and date strings
+def fixture_update_item() -> dict[str, Any]:
+    # Create an UpdateItem instance and return as a dictionary with
+    # PascalCase fields and date strings
     item = {
         "Id": None,  # Will be filled in by the test
         "ValueStr": "Updated String",

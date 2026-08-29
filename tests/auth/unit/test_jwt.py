@@ -1,30 +1,34 @@
 from datetime import datetime, timedelta
 
-import pytest
 import jwt
-from litestar.exceptions import NotAuthorizedException
+import pytest
 
-from app.config import config
-from app.auth.domain.token import decode_jwt_token, encode_jwt_token
+from app.auth.domain.errors import InvalidTokenError
+from app.auth.service.jwt_token_service import JwtTokenService
 
 # Constants
 ALGORITHM = "HS256"
 AUTH_DURATION = timedelta(hours=1)
 
-# Mock the secret key used in encoding and decoding
-config.JWT_SECRET = "supersecretkey"
+# The signing key is injected, so this test needs no application configuration.
+JWT_SECRET = "supersecretkey"
+
+
+@pytest.fixture
+def token_service() -> JwtTokenService:
+    return JwtTokenService(secret=JWT_SECRET, algorithm=ALGORITHM)
 
 
 class TestJWT:
-    def test_encode_jwt_token(self):
+    def test_encode_jwt_token(self, token_service: JwtTokenService):
         """Test the JWT token encoding functionality."""
         username = "testuser"
 
         # Encode the token
-        token = encode_jwt_token(username)
+        token = token_service.encode(username)
 
         # Decode the token to validate the encoding
-        decoded_token = decode_jwt_token(token)
+        decoded_token = token_service.decode(token)
 
         # Ensure the decoded token contains the correct username
         assert decoded_token.sub == username
@@ -34,30 +38,30 @@ class TestJWT:
         assert isinstance(decoded_token.iat, float)
         assert isinstance(decoded_token.sub, str)
 
-    def test_decode_valid_jwt_token(self):
+    def test_decode_valid_jwt_token(self, token_service: JwtTokenService):
         """Test decoding a valid JWT token."""
         username = "testuser"
 
         # Encode a valid token
-        token = encode_jwt_token(username)
+        token = token_service.encode(username)
 
         # Decode the token
-        decoded_token = decode_jwt_token(token)
+        decoded_token = token_service.decode(token)
 
         # Ensure the decoded token contains the correct username
         assert decoded_token.sub == username
         assert isinstance(decoded_token.exp, float)
         assert isinstance(decoded_token.iat, float)
 
-    def test_decode_invalid_jwt_token(self):
+    def test_decode_invalid_jwt_token(self, token_service: JwtTokenService):
         """Test decoding an invalid JWT token."""
         invalid_token = "invalid.token.here"
 
-        # Try decoding an invalid token and ensure it raises a NotAuthorizedException
-        with pytest.raises(NotAuthorizedException, match="Invalid token"):
-            decode_jwt_token(invalid_token)
+        # Try decoding an invalid token and ensure it raises a domain error
+        with pytest.raises(InvalidTokenError, match="Invalid token"):
+            token_service.decode(invalid_token)
 
-    def test_decode_expired_jwt_token(self):
+    def test_decode_expired_jwt_token(self, token_service: JwtTokenService):
         """Test decoding an expired JWT token."""
         username = "testuser"
 
@@ -68,10 +72,19 @@ class TestJWT:
                 "iat": datetime.now().timestamp(),
                 "sub": username,
             },
-            config.JWT_SECRET,
+            JWT_SECRET,
             algorithm=ALGORITHM,
         )
 
-        # Try decoding the expired token and ensure it raises a NotAuthorizedException
-        with pytest.raises(NotAuthorizedException, match="Invalid token"):
-            decode_jwt_token(expired_token)
+        # Try decoding the expired token and ensure it raises a domain error
+        with pytest.raises(InvalidTokenError, match="Invalid token"):
+            token_service.decode(expired_token)
+
+    def test_decode_token_signed_with_another_secret(
+        self, token_service: JwtTokenService
+    ):
+        """A token signed by a different key must be rejected."""
+        foreign_token = JwtTokenService(secret="a-different-secret").encode("testuser")
+
+        with pytest.raises(InvalidTokenError, match="Invalid token"):
+            token_service.decode(foreign_token)

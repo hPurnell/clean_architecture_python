@@ -9,6 +9,7 @@ The project is structured with concentric rings where the code depedencies flow 
 - Web framework - Litestar.
     - Transport layer case conversion, i.e PascalCase REST layer to snake_case internal naming.
 - Event streaming handled by FastSteam, supports Kafka, RabbitMQ, and Redis. Pub / sub.
+    - Commands published over the broker are tracked as jobs, so an asynchronous request still has an outcome the caller can read back.
 - ORM - SQLalchemy
     - Low code approach to adding tables - create a new domain model, a new SQLalchemy table entity, and inherit from BaseRepository and AbstractRepository.
 - Unit of work design pattern.
@@ -106,6 +107,28 @@ docker run -it --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:4.0-man
         "CreatedDate": "2025-03-17T01:47:27.156348",
         "ModifiedDate": "2025-03-17T01:47:27.156353"
         }
+
+## Decoupled commands and jobs
+`/items_decoupled` accepts the same commands as `/items`, but publishes them to the broker instead of carrying them out. There is no result to return, so each route records a job and answers `202 Accepted` with it:
+
+    POST /items_decoupled
+
+        {
+        "Id": "9f2c1d8e4b7a4b0f8a1c6d3e5f7a9b2c",
+        "Command": "create_item",
+        "Status": "PENDING",
+        "Result": null,
+        "Error": null,
+        "CreatedDate": "2025-03-17T01:47:27.156348",
+        "ModifiedDate": "2025-03-17T01:47:27.156348"
+        }
+
+The subscriber that runs the command moves the job to `RUNNING`, then to `SUCCEEDED` or `FAILED`. Poll it at:
+
+    GET /jobs/{job_id}
+    GET /jobs
+
+`Result` is the id of the item the command affected, so a successful create is followed by `GET /items/{Result}`. `Error` carries the message of whatever went wrong. A domain error — deleting an item that does not exist, say — ends the job as `FAILED` rather than being retried, since the command could never succeed; anything else is recorded and left to the broker to redeliver.
 
 ## Linting
 1. Install linters.
