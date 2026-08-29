@@ -11,7 +11,6 @@ from app.items.messaging.item_commands import (
     ITEM_COMMAND_SCHEMA_VERSION,
     CreateItemCommand,
     DeleteItemCommand,
-    ItemValues,
     UpdateItemCommand,
     from_create_command,
     from_update_command,
@@ -19,6 +18,10 @@ from app.items.messaging.item_commands import (
     to_delete_command,
     to_update_command,
 )
+
+# The value fields an item command carries. Kept here as a literal so a change
+# to the wire contract has to be made deliberately in two places.
+ITEM_VALUE_FIELDS = {"value_str", "value_int", "value_float"}
 
 JOB_ID = "9f2c1d8e4b7a4b0f8a1c6d3e5f7a9b2c"
 
@@ -87,15 +90,13 @@ class TestItemCommands:
             "schema_version",
         }
 
-    def test_the_commands_share_one_definition_of_an_item_s_values(self):
-        # The point of the composition: a value added to ItemValues reaches
-        # every command that carries item data, and nothing else.
-        value_names = {field.name for field in fields(ItemValues)}
-
-        assert value_names <= {field.name for field in fields(CreateItemCommand)}
-        assert value_names <= {field.name for field in fields(UpdateItemCommand)}
-        assert value_names.isdisjoint(
-            {field.name for field in fields(DeleteItemCommand)}
+    def test_only_the_commands_that_change_an_item_carry_its_values(self):
+        # Create and Update carry the value fields; Delete, which only needs an
+        # id, must not grow them.
+        assert ITEM_VALUE_FIELDS <= {f.name for f in fields(CreateItemCommand)}
+        assert ITEM_VALUE_FIELDS <= {f.name for f in fields(UpdateItemCommand)}
+        assert ITEM_VALUE_FIELDS.isdisjoint(
+            {f.name for f in fields(DeleteItemCommand)}
         )
 
     @pytest.mark.parametrize(

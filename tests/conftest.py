@@ -8,7 +8,6 @@ from litestar.testing import TestClient
 
 from app.auth.db.fake_user_respository import DEFAULT_PASSWORD, FakeUserRepository
 from app.litestar_app_factory import create_integration_test_app, create_unit_test_app
-from app.utils.lock_test import lock_test  # noqa: F401  (a fixture, used by name)
 
 
 @pytest.fixture(scope="function")

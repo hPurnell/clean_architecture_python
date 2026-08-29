@@ -5,12 +5,13 @@ from litestar import Litestar
 from litestar.testing import TestClient
 
 
-@pytest.mark.separate
+# Every item integration app boots a broker bound to the same RabbitMQ queues,
+# so these must not run concurrently with each other under `pytest -n auto`.
+# xdist_group (with --dist loadgroup, set in pytest.ini) keeps the whole group
+# on one worker; it is ignored on a plain single-process run.
+@pytest.mark.xdist_group("item_integration")
 @pytest.mark.integration
 class TestItemCtrlIntegration:
-    @pytest.fixture(autouse=True)
-    def lock(self, lock_test):
-        pass
 
     def test_post_items_get_items(
         self,

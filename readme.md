@@ -145,4 +145,4 @@ Tests are located in the tests directory. To run the tests:
 
         pytest -n auto
 
-`-n auto` is used to run the tests on seperate forked processes, ensuring that each test runs in isolation. Each test has a fresh mock database, as the integration/E2E tests assert database state.
+`-n auto` runs the tests across xdist worker processes, so each has its own mock database — the integration/E2E tests assert database state. The item integration tests share one RabbitMQ broker, so they carry `@pytest.mark.xdist_group("item_integration")`; with `--dist loadgroup` (set in `pytest.ini`) xdist keeps that whole group on a single worker.

@@ -44,11 +44,13 @@ class TestArgon2PasswordService:
     ):
         # Each hash carries its own salt, so equal passwords do not give
         # themselves away by having equal hashes.
-        first = password_service.hash(PASSWORD)
-        second = password_service.hash(PASSWORD)
-
-        assert first != second
-        assert password_service.verify(PASSWORD, second)
+        #
+        # This pins a contract property of AbstractPasswordService ("salted per
+        # call"), not argon2-cffi's behaviour: today the assertion passes
+        # trivially, but it is what fails if the adapter is ever swapped for one
+        # that uses a fixed salt or memoises results. Kept to one assertion --
+        # verifying `second` would only duplicate test_verify_accepts_the_password.
+        assert password_service.hash(PASSWORD) != password_service.hash(PASSWORD)
 
     def test_a_hash_is_verified_with_the_parameters_it_was_made_with(self):
         # Raising the cost must not invalidate the hashes already stored.

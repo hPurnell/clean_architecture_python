@@ -49,3 +49,21 @@ class TestAuthService:
     def test_login_with_an_unknown_user(self, auth_service: AuthService):
         with pytest.raises(InvalidCredentialsError):
             auth_service.login("nobody@example.com", DEFAULT_PASSWORD)
+
+    def test_login_normalises_the_username_case(self, auth_service: AuthService):
+        token = auth_service.login("John.Doe@Example.COM", DEFAULT_PASSWORD)
+
+        # The claim carries the stored username, not the casing the caller sent.
+        assert auth_service.verify(token).sub == USERNAME
+
+    def test_unknown_user_and_wrong_password_fail_the_same_way(
+        self, auth_service: AuthService
+    ):
+        # Telling the two apart tells a caller which usernames exist.
+        with pytest.raises(InvalidCredentialsError) as unknown_user:
+            auth_service.login("nobody@example.com", DEFAULT_PASSWORD)
+
+        with pytest.raises(InvalidCredentialsError) as wrong_password:
+            auth_service.login(USERNAME, "not the password")
+
+        assert str(unknown_user.value) == str(wrong_password.value)

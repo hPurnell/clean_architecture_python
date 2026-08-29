@@ -38,12 +38,11 @@ def dispatch(client: TestClient[Litestar], method: str, path: str, **kwargs) -> 
     return str(job["Id"])
 
 
-@pytest.mark.separate
+# Shares the RabbitMQ queues with TestItemCtrlIntegration; the same xdist group
+# keeps every item integration test on a single worker, serialised.
+@pytest.mark.xdist_group("item_integration")
 @pytest.mark.integration
 class TestItemDecoupledCtrlIntegration:
-    @pytest.fixture(autouse=True)
-    def lock(self, lock_test):
-        pass
 
     def test_post_item(
         self,
