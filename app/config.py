@@ -3,7 +3,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class AppConfig(BaseSettings):
     APP_NAME: str = "DefaultAppName"
-    DEBUG: bool = True
+
+    # Off unless a deployment asks for it. Debug mode serves tracebacks and
+    # internal state to whoever made the request, so the unconfigured default
+    # is the safe one rather than the convenient one.
+    DEBUG: bool = False
 
     # No default: a deployment that forgets to set this should fail loudly
     # rather than sign tokens with a publicly known key.

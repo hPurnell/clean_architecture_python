@@ -114,3 +114,28 @@ class TestItemCtrlIntegration:
         assert item["ValueStr"] == update_item["ValueStr"]
         assert item["ValueInt"] == update_item["ValueInt"]
         assert item["ValueFloat"] == update_item["ValueFloat"]
+
+    def test_patch_item_leaves_out_what_it_does_not_name(
+        self,
+        fixture_integration_test_client_with_auth: TestClient[Litestar],
+        fixture_new_item: dict[str, Any],
+    ):
+        """A PATCH carrying two fields must not blank the third.
+
+        Every other patch test here sends a whole item, which is the one shape
+        that hid this: the endpoint answered 200 and nulled everything the
+        caller had left out.
+        """
+        client = fixture_integration_test_client_with_auth
+
+        response = client.post("/items", json=fixture_new_item)
+        assert response.is_success
+        item_id = response.json()["Id"]
+
+        response = client.patch("/items", json={"Id": item_id, "ValueStr": "changed"})
+        assert response.is_success
+
+        item = client.get(f"/items/{item_id}").json()
+        assert item["ValueStr"] == "changed"
+        assert item["ValueInt"] == fixture_new_item["ValueInt"]
+        assert item["ValueFloat"] == fixture_new_item["ValueFloat"]

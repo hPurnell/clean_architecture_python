@@ -1,20 +1,30 @@
 # Clean Architecture implementation on Litestar
 Python implementation of Robert C. Martin's Clean Architecture. 
 
-The project is structured with concentric rings where the code depedencies flow inwards towards the center (the business domain layer) from the outer layers. Components are loosely coupled, which benefits testing and the evolving needs of the platform.
+The project is structured with concentric rings where the code depedencies
+flow inwards towards the center (the business domain layer) from the outer
+layers. Components are loosely coupled, which benefits testing and the
+evolving needs of the platform.
 
 ![Clean Architecture](https://blog.cleancoder.com/uncle-bob/images/2012-08-13-the-clean-architecture/CleanArchitecture.jpg)
 
 ## Features
 - Web framework - Litestar.
-    - Transport layer case conversion, i.e PascalCase REST layer to snake_case internal naming.
-- Event streaming handled by FastSteam, supports Kafka, RabbitMQ, and Redis. Pub / sub.
-    - Commands published over the broker are tracked as jobs, so an asynchronous request still has an outcome the caller can read back.
+    - Transport layer case conversion, i.e PascalCase REST layer to
+      snake_case internal naming.
+- Event streaming handled by FastSteam, supports Kafka, RabbitMQ, and Redis.
+  Pub / sub.
+    - Commands published over the broker are tracked as jobs, so an
+      asynchronous request still has an outcome the caller can read back.
 - ORM - SQLalchemy
-    - Low code approach to adding tables - create a new domain model, a new SQLalchemy table entity, and inherit from BaseRepository and AbstractRepository.
+    - Low code approach to adding tables - create a new domain model, a new
+      SQLalchemy table entity, and inherit from BaseRepository and
+      AbstractRepository.
 - Unit of work design pattern.
 - Dependency Inversion - Dishka DI framework
-    - Dependency injection for components, seperate assembly for the application and test case instances. Monkey patching for tests is unncessary.
+    - Dependency injection for components, seperate assembly for the
+      application and test case instances. Monkey patching for tests is
+      unncessary.
 
 
 ## Application layers
@@ -92,7 +102,8 @@ is never changed by hand and the application never creates its own tables:
 every change is a reviewable file in `migrations/versions`, applied in order.
 
 Alembic reads `DATABASE_URL` from `app.config` — the same setting the
-application uses — so `alembic.ini` holds no connection string and no password.
+application uses — so `alembic.ini` holds no connection string and no
+password.
 
 ### Everyday use
 
@@ -164,18 +175,21 @@ running.
         }
 
     PATCH /items:
-    
+
         {
         "Id": 8,
-        "ValueStr": "string",
-        "ValueInt": 0,
-        "ValueFloat": 0,
-        "CreatedDate": "2025-03-17T01:47:27.156348",
-        "ModifiedDate": "2025-03-17T01:47:27.156353"
+        "ValueStr": "string"
         }
 
+    A PATCH carries the id and the fields being changed. Anything left out
+    keeps the value it already has. `CreatedDate` and `ModifiedDate` belong to
+    the server -- the first records when the item was stored, the second is
+    stamped on every change -- and are not read from the request.
+
 ## Decoupled commands and jobs
-`/items_decoupled` accepts the same commands as `/items`, but publishes them to the broker instead of carrying them out. There is no result to return, so each route records a job and answers `202 Accepted` with it:
+`/items_decoupled` accepts the same commands as `/items`, but publishes them
+to the broker instead of carrying them out. There is no result to return, so
+each route records a job and answers `202 Accepted` with it:
 
     POST /items_decoupled
 
@@ -189,12 +203,18 @@ running.
         "ModifiedDate": "2025-03-17T01:47:27.156348"
         }
 
-The subscriber that runs the command moves the job to `RUNNING`, then to `SUCCEEDED` or `FAILED`. Poll it at:
+The subscriber that runs the command moves the job to `RUNNING`, then to
+`SUCCEEDED` or `FAILED`. Poll it at:
 
     GET /jobs/{job_id}
     GET /jobs
 
-`Result` is the id of the item the command affected, so a successful create is followed by `GET /items/{Result}`. `Error` carries the message of whatever went wrong. A domain error — deleting an item that does not exist, say — ends the job as `FAILED` rather than being retried, since the command could never succeed; anything else is recorded and left to the broker to redeliver.
+`Result` is the id of the item the command affected, so a successful create
+is followed by `GET /items/{Result}`. `Error` carries the message of
+whatever went wrong. A domain error — deleting an item that does not exist,
+say — ends the job as `FAILED` rather than being retried, since the command
+could never succeed; anything else is recorded and left to the broker to
+redeliver.
 
 ## Linting
 1. Install linters.
@@ -211,12 +231,12 @@ Tests are located in the tests directory. To run the whole suite in parallel:
 
         pytest -n auto --dist loadgroup
 
-`-n auto` runs the tests across xdist worker processes, so each has its own mock
-database — the integration/E2E tests assert database state. The item integration
-tests share one RabbitMQ broker, so they carry
-`@pytest.mark.xdist_group("item_integration")`; `--dist loadgroup` is what makes
-xdist honour that and keep the whole group on a single worker. Without it the
-group mark is inert.
+`-n auto` runs the tests across xdist worker processes, so each has its own
+mock database — the integration/E2E tests assert database state. The item
+integration tests share one RabbitMQ broker, so they carry
+`@pytest.mark.xdist_group("item_integration")`; `--dist loadgroup` is what
+makes xdist honour that and keep the whole group on a single worker. Without
+it the group mark is inert.
 
 Plain `pytest` (no `-n`) runs everything serially and is what the VS Code test
 runner uses — xdist and the editor's per-test execution/debugging do not mix.

@@ -24,30 +24,35 @@ from app.jobs.controllers import JobController
 from app.shared.web.exception_handlers import EXCEPTION_HANDLERS
 
 
+# The three factories differ in one thing only -- which set of components the
+# container is assembled from. Everything that decides how the application
+# behaves at the edge belongs in _build_app, where no caller can vary it.
 def create_app() -> Litestar:
-    return _build_app(
-        AppProvider(),
-        middleware=[
-            # auth_mw
-        ],
-    )
+    return _build_app(AppProvider())
 
 
 def create_unit_test_app() -> Litestar:
-    return _build_app(UnitTestProvider(), middleware=[create_auth_middleware()])
+    return _build_app(UnitTestProvider())
 
 
 def create_integration_test_app() -> Litestar:
-    return _build_app(IntegrationTestProvider(), middleware=[create_auth_middleware()])
+    return _build_app(IntegrationTestProvider())
 
 
-def _build_app(provider: Provider, middleware: list[Any]) -> Litestar:
+def _build_app(provider: Provider) -> Litestar:
     app = Litestar(
-        debug=True,
+        # Read from configuration rather than hardcoded: debug mode serves
+        # tracebacks and internal state to the caller.
+        debug=config.DEBUG,
         route_handlers=get_route_handlers(),
         openapi_config=create_openapi_config(),
         exception_handlers=EXCEPTION_HANDLERS,
-        middleware=middleware,
+        # Built here rather than accepted as an argument. Authentication a
+        # caller can leave out is authentication that eventually is left out,
+        # and the tests build their own apps -- so an app assembled without it
+        # would serve every route openly with the whole suite still green.
+        # Routes opt out individually with `exclude_from_auth`.
+        middleware=[create_auth_middleware()],
         on_startup=[on_startup],
         on_shutdown=[on_shutdown],
         lifespan=[lifespan_broker],
