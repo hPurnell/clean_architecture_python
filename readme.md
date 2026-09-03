@@ -1,5 +1,8 @@
 # Clean Architecture implementation on Litestar
-Python implementation of Robert C. Martin's Clean Architecture. 
+This project is a Python implementation of Robert C. Martin's Clean Architecture. 
+It also serves as a modern implementation and interpretation of some of the ideas
+in [Cosmic Python](https://www.cosmicpython.com/) and the book Architecture Patterns
+with Python by Harry Percival and Bob Gregory.
 
 The project is structured with concentric rings where the code depedencies
 flow inwards towards the center (the business domain layer) from the outer
@@ -12,19 +15,42 @@ evolving needs of the platform.
 - Web framework - Litestar.
     - Transport layer case conversion, i.e PascalCase REST layer to
       snake_case internal naming.
+- Authentication - JWT bearer tokens.
+    - Argon2id password hashing at the library's RFC 9106 profile, and
+      middleware that verifies the token before a request reaches a handler.
+      Routes opt out individually with `exclude_from_auth`.
+- API documentation - OpenAPI.
+    - Swagger and Elements UIs generated from the route handlers, with the
+      bearer security scheme declared, so the documentation is usable against
+      a running server.
+- Domain errors that know nothing about HTTP.
+    - The domain and service layers raise plain exceptions; one handler maps
+      them onto status codes at the edge, so a NotFoundError becomes a 404
+      without the domain importing a web framework.
 - Event streaming handled by FastSteam, supports Kafka, RabbitMQ, and Redis.
   Pub / sub.
     - Commands published over the broker are tracked as jobs, so an
       asynchronous request still has an outcome the caller can read back.
+    - Commands carry a schema version, and a message predating a field the
+      consumer requires is rejected rather than half-run.
 - ORM - SQLalchemy
     - Low code approach to adding tables - create a new domain model, a new
       SQLalchemy table entity, and inherit from BaseRepository and
       AbstractRepository.
+- Database migrations - Alembic.
+    - The schema is owned by versioned migration files.
 - Unit of work design pattern.
 - Dependency Inversion - Dishka DI framework
     - Dependency injection for components, seperate assembly for the
       application and test case instances. Monkey patching for tests is
       unncessary.
+- Typed configuration - pydantic-settings.
+    - Settings are read from the environment or `.env` and validated on
+      import. A required setting has no default, so a misconfigured
+      deployment fails at startup rather than at the first request to need it.
+- Static type checking - mypy strict.
+    - The application and the test suite both pass mypy in strict mode, with
+      ruff and black enforced by pre-commit.
 
 
 ## Application layers
@@ -240,3 +266,58 @@ it the group mark is inert.
 
 Plain `pytest` (no `-n`) runs everything serially and is what the VS Code test
 runner uses — xdist and the editor's per-test execution/debugging do not mix.
+
+## Not implemented yet
+
+What a reference implementation leaves out is worth stating. Roughly in the
+order they would be worth closing:
+
+### The domain ring is thin
+- `Item`, `Job` and `User` are dataclasses with no methods: every rule about
+  them lives in a service.
+- `JobStatus` has a real lifecycle (`PENDING` → `RUNNING` → `SUCCEEDED` |
+  `FAILED`), but nothing rejects an illegal transition.
+- No domain events and no message bus. The broker carries commands issued by
+  a controller, never events raised by an aggregate, so there is no
+  `collect_new_events` on the unit of work and nothing subscribes in process.
+  This is the half of the Cosmic Python progression the project stops short
+  of.
+- No value objects; the models are primitives throughout.
+
+### Authorization
+- Authentication answers "who are you" and stops there. A token carries
+  `exp`, `iat` and `sub` — no roles, scopes or permissions — so any
+  authenticated caller can read, change and delete every item.
+- Items have no owner.
+- No refresh tokens, logout or revocation.
+- The user repository is a fake holding one hardcoded user. There is no users
+  table, no registration and no password change.
+
+### Message delivery
+- No idempotency: a redelivered create command creates a second item. The
+  `job_id` every command already carries is the key that would prevent it.
+- No dead letter queue and no backoff, so a poison message redelivers
+  forever.
+- No outbox. A crash between recording a job and publishing its command
+  leaves the job `PENDING`, with nothing to run it and nothing to time it out.
+- Message contracts are versioned, but there is no upcasting path to a second
+  version.
+
+### API surface
+- No pagination, filtering or sorting: a collection route returns the whole
+  table, and jobs accumulate with no expiry.
+- No optimistic concurrency — two concurrent updates and the last writer wins
+  silently. `modified_date` is already stored, and is one `If-Match` away
+  from being a precondition.
+- No API versioning, and `PATCH /items` takes the id in the body rather than
+  the path.
+
+### Production readiness
+- No health or readiness endpoint, on a service with two external
+  dependencies.
+- No correlation ids or structured logging, so the two halves of a decoupled
+  request cannot be tied together in the logs.
+- No rate limiting, including on `/auth/login`.
+- No CORS or security header configuration.
+- No metrics or tracing.
+- No `docker-compose.yml` and no CI.
