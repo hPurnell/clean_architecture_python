@@ -9,6 +9,7 @@ from litestar.status_codes import (
 )
 from litestar.testing import TestClient
 
+from app.auth.domain.role import Role
 from app.auth.service.jwt_token_service import JwtTokenService
 
 
@@ -132,7 +133,7 @@ class TestSecuredEndpoint:
         self, fixture_integration_test_client: TestClient[Litestar]
     ):
         foreign = JwtTokenService(secret="a-different-secret").encode(
-            "john.doe@example.com"
+            "john.doe@example.com", {Role.USER}
         )
 
         response = fixture_integration_test_client.get(

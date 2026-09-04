@@ -3,6 +3,8 @@ from litestar.controller import Controller
 from litestar.handlers.http_handlers.decorators import delete, patch, post
 from litestar.status_codes import HTTP_202_ACCEPTED
 
+from app.auth.controllers.guards import requires_role
+from app.auth.domain.role import Role
 from app.items.controllers.item_dto import NewItemDTO, UpdateItemDTO
 from app.items.domain.item import Item
 from app.items.service.item_command_dispatcher import ItemCommandDispatcher
@@ -35,7 +37,11 @@ class ItemsCommandsDecoupledCtrl(Controller):
     ) -> Job:
         return await item_command_dispatcher.update_item(data)
 
-    @delete(path="/{item_id:int}", status_code=HTTP_202_ACCEPTED)
+    @delete(
+        path="/{item_id:int}",
+        status_code=HTTP_202_ACCEPTED,
+        guards=[requires_role(Role.ADMIN)],
+    )
     @inject
     async def delete_item(
         self,

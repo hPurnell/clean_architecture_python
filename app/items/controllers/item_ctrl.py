@@ -2,6 +2,8 @@ from dishka.integrations.litestar import FromDishka, inject
 from litestar.controller import Controller
 from litestar.handlers.http_handlers.decorators import delete, get, patch, post
 
+from app.auth.controllers.guards import requires_role
+from app.auth.domain.role import Role
 from app.items.controllers.item_dto import ItemDTO, NewItemDTO, UpdateItemDTO
 from app.items.domain.item import Item
 from app.items.service.item_service import ItemService
@@ -37,7 +39,7 @@ class ItemController(Controller):
     ) -> Item:
         return item_service.update_item(data)
 
-    @delete(path="/{item_id:int}")
+    @delete(path="/{item_id:int}", guards=[requires_role(Role.ADMIN)])
     @inject
     async def delete_item(
         self, item_id: int, item_service: FromDishka[ItemService]

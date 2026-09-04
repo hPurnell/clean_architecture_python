@@ -1,18 +1,25 @@
 import pytest
 
-from app.auth.db.fake_user_respository import DEFAULT_PASSWORD, FakeUserRepository
+from app.auth.db.fake_user_repository import DEFAULT_PASSWORD, FakeUserRepository
+from app.auth.domain.abstract_user_repository import AbstractUserRepository
 from app.auth.domain.errors import InvalidCredentialsError
 from app.auth.service.argon2_password_service import Argon2PasswordService
 from app.auth.service.auth_service import AuthService
 from app.auth.service.jwt_token_service import JwtTokenService
+from app.shared.persistence.in_memory_unit_of_work import InMemoryUnitOfWork
 
 USERNAME = "john.doe@example.com"
 
 
 @pytest.fixture
-def auth_service() -> AuthService:
+def user_repository() -> FakeUserRepository:
+    return FakeUserRepository()
+
+
+@pytest.fixture
+def auth_service(user_repository: FakeUserRepository) -> AuthService:
     return AuthService(
-        FakeUserRepository(),
+        InMemoryUnitOfWork({AbstractUserRepository: user_repository}),
         JwtTokenService(secret="supersecretkey"),
         Argon2PasswordService(),
     )

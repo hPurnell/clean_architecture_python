@@ -10,7 +10,6 @@ from litestar.testing import TestClient
 @pytest.mark.xdist_group("item_integration")
 @pytest.mark.integration
 class TestItemCtrlIntegration:
-
     def test_post_items_get_items(
         self,
         fixture_integration_test_client_with_auth: TestClient[Litestar],

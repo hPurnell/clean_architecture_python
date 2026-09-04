@@ -4,11 +4,12 @@ from typing import Any, Callable, Mapping, Type
 from dishka import Provider, Scope, from_context, provide
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.auth.db.fake_user_respository import FakeUserRepository
+from app.auth.db.fake_user_repository import FakeUserRepository
+from app.auth.db.user_repository import UserRepository
 from app.auth.domain.abstract_auth_service import AbstractAuthService
 from app.auth.domain.abstract_password_service import AbstractPasswordService
 from app.auth.domain.abstract_token_service import AbstractTokenService
-from app.auth.domain.abstract_user_respository import AbstractUserRepository
+from app.auth.domain.abstract_user_repository import AbstractUserRepository
 from app.auth.service.argon2_password_service import Argon2PasswordService
 from app.auth.service.auth_service import AuthService
 from app.auth.service.jwt_token_service import JwtTokenService
@@ -35,6 +36,7 @@ from app.shared.persistence.unit_of_work import SqlAlchemyUnitOfWork
 REPOSITORY_FACTORIES: Mapping[Type[Any], Callable[[Session], Any]] = {
     AbstractItemRepository: ItemRepository,
     AbstractJobRepository: JobRepository,
+    AbstractUserRepository: UserRepository,
 }
 
 
@@ -58,10 +60,6 @@ class AppProvider(Provider):
     @provide(scope=Scope.APP)
     def password_service(self) -> AbstractPasswordService:
         return Argon2PasswordService()
-
-    @provide(scope=Scope.REQUEST)
-    def user_repository(self) -> AbstractUserRepository:
-        return FakeUserRepository()
 
     @provide(scope=Scope.REQUEST)
     def unit_of_work(
@@ -91,11 +89,11 @@ class AppProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def auth_service(
         self,
-        user_repository: AbstractUserRepository,
+        unit_of_work: AbstractUnitOfWork,
         token_service: AbstractTokenService,
         password_service: AbstractPasswordService,
     ) -> AbstractAuthService:
-        return AuthService(user_repository, token_service, password_service)
+        return AuthService(unit_of_work, token_service, password_service)
 
     @provide(scope=Scope.REQUEST)
     def item_command_publisher(
@@ -130,8 +128,8 @@ class UnitTestProvider(Provider):
     def fake_job_repository(self) -> FakeJobRepository:
         return FakeJobRepository()
 
-    @provide(scope=Scope.REQUEST)
-    def user_repository(self) -> AbstractUserRepository:
+    @provide(scope=Scope.APP)
+    def fake_user_repository(self) -> FakeUserRepository:
         return FakeUserRepository()
 
     @provide(scope=Scope.REQUEST)
@@ -139,11 +137,13 @@ class UnitTestProvider(Provider):
         self,
         item_repository: FakeItemRepository,
         job_repository: FakeJobRepository,
+        user_repository: FakeUserRepository,
     ) -> Iterator[AbstractUnitOfWork]:
         with InMemoryUnitOfWork(
             {
                 AbstractItemRepository: item_repository,
                 AbstractJobRepository: job_repository,
+                AbstractUserRepository: user_repository,
             }
         ) as unit_of_work:
             yield unit_of_work
@@ -167,11 +167,11 @@ class UnitTestProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def auth_service(
         self,
-        user_repository: AbstractUserRepository,
+        unit_of_work: AbstractUnitOfWork,
         token_service: AbstractTokenService,
         password_service: AbstractPasswordService,
     ) -> AbstractAuthService:
-        return AuthService(user_repository, token_service, password_service)
+        return AuthService(unit_of_work, token_service, password_service)
 
     @provide(scope=Scope.REQUEST)
     def item_command_publisher(
@@ -205,8 +205,8 @@ class IntegrationTestProvider(Provider):
     def fake_job_repository(self) -> FakeJobRepository:
         return FakeJobRepository()
 
-    @provide(scope=Scope.REQUEST)
-    def user_repository(self) -> AbstractUserRepository:
+    @provide(scope=Scope.APP)
+    def fake_user_repository(self) -> FakeUserRepository:
         return FakeUserRepository()
 
     @provide(scope=Scope.REQUEST)
@@ -214,11 +214,13 @@ class IntegrationTestProvider(Provider):
         self,
         item_repository: FakeItemRepository,
         job_repository: FakeJobRepository,
+        user_repository: FakeUserRepository,
     ) -> Iterator[AbstractUnitOfWork]:
         with InMemoryUnitOfWork(
             {
                 AbstractItemRepository: item_repository,
                 AbstractJobRepository: job_repository,
+                AbstractUserRepository: user_repository,
             }
         ) as unit_of_work:
             yield unit_of_work
@@ -242,11 +244,11 @@ class IntegrationTestProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def auth_service(
         self,
-        user_repository: AbstractUserRepository,
+        unit_of_work: AbstractUnitOfWork,
         token_service: AbstractTokenService,
         password_service: AbstractPasswordService,
     ) -> AbstractAuthService:
-        return AuthService(user_repository, token_service, password_service)
+        return AuthService(unit_of_work, token_service, password_service)
 
     @provide(scope=Scope.REQUEST)
     def item_command_publisher(

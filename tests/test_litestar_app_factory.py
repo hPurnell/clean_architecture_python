@@ -2,7 +2,9 @@ import pytest
 from litestar import Litestar
 from litestar.middleware.base import DefineMiddleware
 
-from app.authentication_middleware import JWTAuthenticationMiddleware
+from app.auth.controllers.authentication_middleware import (
+    JWTAuthenticationMiddleware,
+)
 from app.config import config
 from app.litestar_app_factory import (
     create_app,

@@ -21,8 +21,7 @@ def wait_for_job(client: TestClient[Litestar], job_id: str) -> dict[str, Any]:
             return job
         if time.monotonic() >= deadline:
             raise AssertionError(
-                f"Job {job_id} was still {job['Status']} after "
-                f"{JOB_TIMEOUT_SECONDS}s"
+                f"Job {job_id} was still {job['Status']} after {JOB_TIMEOUT_SECONDS}s"
             )
         time.sleep(JOB_POLL_SECONDS)
 
@@ -41,7 +40,6 @@ def dispatch(client: TestClient[Litestar], method: str, path: str, **kwargs) -> 
 @pytest.mark.xdist_group("item_integration")
 @pytest.mark.integration
 class TestItemDecoupledCtrlIntegration:
-
     def test_post_item(
         self,
         fixture_integration_test_client_with_auth: TestClient[Litestar],

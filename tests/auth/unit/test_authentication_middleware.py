@@ -4,8 +4,11 @@ import pytest
 from litestar.exceptions import NotAuthorizedException
 from litestar.middleware import AuthenticationResult
 
+from app.auth.controllers.authentication_middleware import (
+    JWTAuthenticationMiddleware,
+)
+from app.auth.domain.role import Role
 from app.auth.service.jwt_token_service import JwtTokenService
-from app.authentication_middleware import JWTAuthenticationMiddleware
 
 JWT_SECRET = "supersecretkey"
 
@@ -38,7 +41,7 @@ class TestJWTAuthenticationMiddleware:
     async def test_a_valid_bearer_token_authenticates_the_request(
         self, middleware: JWTAuthenticationMiddleware, token_service: JwtTokenService
     ):
-        token = token_service.encode("john.doe@example.com")
+        token = token_service.encode("john.doe@example.com", {Role.USER})
 
         result = await middleware.authenticate_request(
             _FakeConnection({"Authorization": f"Bearer {token}"})  # type: ignore[arg-type]
@@ -86,7 +89,9 @@ class TestJWTAuthenticationMiddleware:
     async def test_a_token_signed_with_another_secret_is_rejected(
         self, middleware: JWTAuthenticationMiddleware
     ):
-        foreign = JwtTokenService(secret="a-different-secret").encode("john")
+        foreign = JwtTokenService(secret="a-different-secret").encode(
+            "john", {Role.USER}
+        )
 
         with pytest.raises(NotAuthorizedException):
             await middleware.authenticate_request(

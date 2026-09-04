@@ -1,6 +1,6 @@
 import pytest
 
-from app.auth.db.fake_user_respository import DEFAULT_PASSWORD, FakeUserRepository
+from app.auth.db.fake_user_repository import DEFAULT_PASSWORD, FakeUserRepository
 
 USERNAME = "john.doe@example.com"
 

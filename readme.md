@@ -20,6 +20,15 @@ evolving needs of the platform.
     - Argon2id password hashing at the library's RFC 9106 profile, and
       middleware that verifies the token before a request reaches a handler.
       Routes opt out individually with `exclude_from_auth`.
+    - Registration, login and password change over a users table:
+      `POST /auth/register`, `/auth/login`, `/auth/password`. A login for a
+      username that does not exist is charged the same work as a real one, so
+      the time taken does not say who is registered.
+- Authorization - roles carried in the token.
+    - A user holds roles, the token carries them, and a route asks for what it
+      needs with `guards=[requires_role(Role.ADMIN)]`. Deleting an item is the
+      one privileged action today; registration never grants `admin`, which is
+      given out of band.
 - API documentation - OpenAPI.
     - Swagger and Elements UIs generated from the route handlers, with the
       bearer security scheme declared, so the documentation is usable against
@@ -189,9 +198,29 @@ running.
         http://127.0.0.1:8000/schema/elements
         http://127.0.0.1:8000/schema/swagger
 
+    POST /auth/register:
+
+        {
+        "name": "Ada Lovelace",
+        "username": "ada@example.com",
+        "password": "a long enough password"
+        }
+
     POST /auth/login:
 
-        {"username": "john.doe@example.com", "password": "password"}
+        {"username": "ada@example.com", "password": "a long enough password"}
+
+    Register first: users live in the database, and no account is seeded into
+    it. Send the `access_token` that login returns as
+    `Authorization: Bearer <token>` on everything below.
+
+    POST /auth/password — changes the password of whoever the token belongs
+    to, which is why it takes no username:
+
+        {
+        "current_password": "a long enough password",
+        "new_password": "an even longer password"
+        }
 
     POST /items:
 
@@ -284,13 +313,13 @@ order they would be worth closing:
   event would be raised to an empty room.
 
 ### Authorization
-- Authentication answers "who are you" and stops there. A token carries
-  `exp`, `iat` and `sub` — no roles, scopes or permissions — so any
-  authenticated caller can read, change and delete every item.
-- Items have no owner.
-- No refresh tokens, logout or revocation.
-- The user repository is a fake holding one hardcoded user. There is no users
-  table, no registration and no password change.
+- Roles are coarse: `admin` and `user`, and only deletion is gated. There is
+  no per-resource permission, and no way to grant a role over the API — an
+  administrator is made with SQL.
+- Items have no owner, so there is no such thing as *your* items: any
+  signed-in user can read and change every one of them.
+- No refresh tokens, logout or revocation: a token is good until it expires
+  and nothing can cut it short.
 
 ### Message delivery
 - No idempotency: a redelivered create command creates a second item. The

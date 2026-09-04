@@ -6,7 +6,11 @@ import pytest
 from litestar import Litestar
 from litestar.testing import TestClient
 
-from app.auth.db.fake_user_respository import DEFAULT_PASSWORD, FakeUserRepository
+from app.auth.db.fake_user_repository import (
+    DEFAULT_PASSWORD,
+    PLAIN_USERNAME,
+    FakeUserRepository,
+)
 from app.litestar_app_factory import create_integration_test_app, create_unit_test_app
 
 
@@ -45,6 +49,19 @@ def fixture_integration_test_client_with_auth(
         auth_response = client.post("/auth/login", json=fixture_valid_credentials)
         auth_response_json = auth_response.json()
         client.headers["Authorization"] = f"Bearer {auth_response_json['access_token']}"
+        yield client
+
+
+@pytest.fixture(scope="function")
+def fixture_integration_test_client_without_admin() -> Iterator[TestClient[Litestar]]:
+    app = create_integration_test_app()
+    with TestClient(app=app) as client:
+        auth_response = client.post(
+            "/auth/login",
+            json={"username": PLAIN_USERNAME, "password": DEFAULT_PASSWORD},
+        )
+        token = auth_response.json()["access_token"]
+        client.headers["Authorization"] = f"Bearer {token}"
         yield client
 
 

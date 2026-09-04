@@ -92,9 +92,7 @@ class TestItemCommands:
     def test_only_the_commands_that_change_an_item_carry_its_values(self):
         assert ITEM_VALUE_FIELDS <= {f.name for f in fields(CreateItemCommand)}
         assert ITEM_VALUE_FIELDS <= {f.name for f in fields(UpdateItemCommand)}
-        assert ITEM_VALUE_FIELDS.isdisjoint(
-            {f.name for f in fields(DeleteItemCommand)}
-        )
+        assert ITEM_VALUE_FIELDS.isdisjoint({f.name for f in fields(DeleteItemCommand)})
 
     @pytest.mark.parametrize(
         "command",

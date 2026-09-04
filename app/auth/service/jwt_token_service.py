@@ -1,10 +1,12 @@
+from collections.abc import Collection
 from dataclasses import asdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import jwt
 
 from app.auth.domain.abstract_token_service import AbstractTokenService
 from app.auth.domain.errors import InvalidTokenError
+from app.auth.domain.role import Role
 from app.auth.domain.token import Token
 
 DEFAULT_AUTH_DURATION = timedelta(hours=1)
@@ -22,11 +24,13 @@ class JwtTokenService(AbstractTokenService):
         self._algorithm = algorithm
         self._auth_duration = auth_duration
 
-    def encode(self, username: str) -> str:
+    def encode(self, username: str, roles: Collection[Role]) -> str:
+        now = datetime.now(timezone.utc)
         token = Token(
-            exp=(datetime.now() + self._auth_duration).timestamp(),
-            iat=datetime.now().timestamp(),
+            exp=(now + self._auth_duration).timestamp(),
+            iat=now.timestamp(),
             sub=username,
+            roles=sorted(role.value for role in roles),
         )
         return jwt.encode(asdict(token), self._secret, algorithm=self._algorithm)
 

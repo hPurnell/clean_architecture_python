@@ -4,6 +4,7 @@ import jwt
 import pytest
 
 from app.auth.domain.errors import InvalidTokenError
+from app.auth.domain.role import Role
 from app.auth.service.jwt_token_service import JwtTokenService
 
 # Constants
@@ -26,7 +27,7 @@ class TestJWT:
         username = "testuser"
 
         # Encode the token
-        token = token_service.encode(username)
+        token = token_service.encode(username, {Role.USER})
 
         # Decode the token to validate the encoding
         decoded_token = token_service.decode(token)
@@ -44,7 +45,7 @@ class TestJWT:
         username = "testuser"
 
         # Encode a valid token
-        token = token_service.encode(username)
+        token = token_service.encode(username, {Role.USER})
 
         # Decode the token
         decoded_token = token_service.decode(token)
@@ -85,7 +86,9 @@ class TestJWT:
         self, token_service: JwtTokenService
     ):
         """A token signed by a different key must be rejected."""
-        foreign_token = JwtTokenService(secret="a-different-secret").encode("testuser")
+        foreign_token = JwtTokenService(secret="a-different-secret").encode(
+            "testuser", {Role.USER}
+        )
 
         with pytest.raises(InvalidTokenError, match="Invalid token"):
             token_service.decode(foreign_token)
@@ -138,7 +141,7 @@ class TestJWT:
         """
         before = datetime.now(timezone.utc).timestamp()
         # The decode itself would raise ImmatureSignatureError on a future iat.
-        decoded = token_service.decode(token_service.encode("testuser"))
+        decoded = token_service.decode(token_service.encode("testuser", {Role.USER}))
         after = datetime.now(timezone.utc).timestamp()
 
         assert decoded.iat <= after
@@ -148,7 +151,7 @@ class TestJWT:
         """``exp - iat`` is the configured lifetime, not a hard-coded hour."""
         service = JwtTokenService(secret=JWT_SECRET, auth_duration=timedelta(minutes=5))
 
-        decoded = service.decode(service.encode("testuser"))
+        decoded = service.decode(service.encode("testuser", {Role.USER}))
 
         assert decoded.exp - decoded.iat == pytest.approx(5 * 60, abs=1)
 

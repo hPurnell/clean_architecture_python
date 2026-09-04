@@ -18,3 +18,12 @@ class AbstractPasswordService(ABC):
 
         A hash this service can no longer read is a failed login, not an error.
         """
+
+    @abstractmethod
+    def dummy_verify(self, password: str) -> bool:
+        """Do the work of a verify against no real hash, and return False.
+
+        A login for a username that does not exist has to cost what a real one
+        costs. Returning early instead lets a caller time the difference and
+        learn which usernames are registered.
+        """

@@ -9,8 +9,10 @@ from litestar.openapi import OpenAPIConfig
 from litestar.openapi.spec import Components, Reference, SecurityScheme
 
 from app.auth.controllers.auth_ctrl import AuthController
+from app.auth.controllers.authentication_middleware import (
+    JWTAuthenticationMiddleware,
+)
 from app.auth.service.jwt_token_service import JwtTokenService
-from app.authentication_middleware import JWTAuthenticationMiddleware
 from app.broker import Broker
 from app.config import config
 from app.dishka_dependencies import (
@@ -88,7 +90,9 @@ def create_auth_middleware() -> DefineMiddleware:
     # Built by Litestar, not the container, so the token service is explicit.
     return DefineMiddleware(
         JWTAuthenticationMiddleware,
-        exclude="schema",
+        # Anchored: `exclude` is matched with findall, so a bare "schema"
+        # would skip authentication on any path merely containing it.
+        exclude="^/schema",
         token_service=JwtTokenService(secret=config.JWT_SECRET),
     )
 
