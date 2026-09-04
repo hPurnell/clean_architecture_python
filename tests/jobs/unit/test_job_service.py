@@ -79,8 +79,7 @@ class TestJobService:
     def test_a_domain_error_ends_the_job_rather_than_the_message(
         self, job_service: JobService, item_service: ItemService
     ):
-        # Swallowed on purpose: a redelivered command would fail identically,
-        # so the job record is the report and the message is acknowledged.
+        # Swallowed on purpose: a redelivery would fail identically.
         job = job_service.create_job("delete_item")
 
         with job_service.track(job.id):
@@ -93,8 +92,7 @@ class TestJobService:
     def test_an_unexpected_error_is_recorded_and_re_raised(
         self, job_service: JobService
     ):
-        # Re-raised so that the broker can redeliver a command that may yet
-        # succeed, with the failure recorded either way.
+        # Re-raised so the broker can redeliver a command that may yet succeed.
         job = job_service.create_job("update_item")
 
         with pytest.raises(RuntimeError):
@@ -108,8 +106,7 @@ class TestJobService:
     def test_a_redelivered_command_can_run_a_failed_job_again(
         self, job_service: JobService
     ):
-        # An unexpected error records the failure and re-raises so that the
-        # broker redelivers. The job that comes back is FAILED, so tracking it
+        # The job that comes back from a redelivery is FAILED, so tracking it
         # again has to be allowed or the retry could never happen.
         job = job_service.create_job("update_item")
         with pytest.raises(RuntimeError):

@@ -44,12 +44,7 @@ class TestUpdateItem:
     def test_an_update_leaves_the_fields_it_does_not_name(
         self, item_service, stored_item
     ):
-        """A PATCH says what changes, not what the item is.
-
-        Naming one field used to blank the other two -- and answer 200 while
-        doing it, because an Item carries None for anything the caller left
-        out and the repository writes every field it is handed.
-        """
+        """A PATCH says what changes, not what the item is."""
         updated_item = item_service.update_item(
             Item(id=stored_item.id, value_str="changed")
         )
@@ -60,8 +55,7 @@ class TestUpdateItem:
     def test_what_the_update_returns_is_what_the_store_holds(
         self, item_service, stored_item
     ):
-        # The returned item is the repository's, not a merge that only ever
-        # existed in the reply.
+        # The repository's item, not a merge that only existed in the reply.
         item_service.update_item(Item(id=stored_item.id, value_str="changed"))
 
         reread_item = item_service.get_item(stored_item.id)
@@ -84,8 +78,7 @@ class TestUpdateItem:
     def test_an_update_stamps_when_the_item_was_modified(
         self, item_service, stored_item
     ):
-        # Left to the column's onupdate it would never move: the repository
-        # writes modified_date explicitly, which suppresses it.
+        # The repository writes modified_date explicitly, suppressing onupdate.
         updated_item = item_service.update_item(
             Item(id=stored_item.id, value_str="changed")
         )

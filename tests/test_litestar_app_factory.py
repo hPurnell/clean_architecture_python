@@ -10,9 +10,8 @@ from app.litestar_app_factory import (
     create_unit_test_app,
 )
 
-# Every app this project can build, the deployed one first. The tests exercise
-# apps the tests themselves assemble, so anything asserted of only those says
-# nothing about the one that serves real traffic.
+# Every app this project can build, the deployed one first: the tests assemble
+# their own, so asserting only on those says nothing about what serves traffic.
 APP_FACTORIES = [create_app, create_unit_test_app, create_integration_test_app]
 
 
@@ -29,13 +28,7 @@ def authentication_middleware(app: Litestar) -> list[DefineMiddleware]:
 @pytest.mark.parametrize("create", APP_FACTORIES, ids=lambda create: create.__name__)
 class TestEveryApplication:
     def test_authenticates_its_requests(self, create):
-        """No app may be assembled without the authentication middleware.
-
-        Left to each factory to pass in, this was omitted from the deployed
-        app alone: every route served openly, while the suite -- which builds
-        its own apps, with the middleware -- stayed green. The middleware is
-        built inside _build_app now, and this is what says it has to be.
-        """
+        """No app may be assembled without the authentication middleware."""
         assert authentication_middleware(create())
 
     def test_takes_its_debug_setting_from_the_configuration(self, create, monkeypatch):

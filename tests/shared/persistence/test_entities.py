@@ -12,13 +12,8 @@ class TestEntities:
     def test_the_entities_module_registers_every_mapped_class(self):
         """No entity may be missing from app.shared.persistence.entities.
 
-        Alembic can only write a migration for a table it can see, and it sees
-        the tables in Base.metadata -- which holds whatever happens to have
-        been imported. Importing every module in the application must therefore
-        reveal no table that importing the entities module alone did not.
-
-        A new aggregate whose repository module is not listed there fails here,
-        rather than by quietly never getting a table.
+        Importing every module must reveal no table that importing the entities
+        module alone did not, or a new aggregate silently never gets one.
         """
         declared = set(Base.metadata.tables)
 

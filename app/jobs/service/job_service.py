@@ -53,8 +53,7 @@ class JobService:
         """Run the body as the work of ``job_id``, recording how it turns out.
 
         The body may set ``job.result``. A DomainError ends the job here, since
-        redelivery would fail identically; anything else is recorded and
-        re-raised for the broker to retry.
+        redelivery would fail identically; anything else is re-raised to retry.
         """
         job = self.get_job(job_id)
         job.start(utc_now())

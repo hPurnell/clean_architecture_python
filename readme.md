@@ -2,7 +2,8 @@
 This project is a Python implementation of Robert C. Martin's Clean Architecture. 
 It also serves as a modern implementation and interpretation of some of the ideas
 in [Cosmic Python](https://www.cosmicpython.com/) and the book Architecture Patterns
-with Python by Harry Percival and Bob Gregory.
+with Python by Harry Percival and Bob Gregory.  
+
 
 The project is structured with concentric rings where the code depedencies
 flow inwards towards the center (the business domain layer) from the outer

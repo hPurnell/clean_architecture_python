@@ -14,8 +14,7 @@ from app.config import config
 
 ALEMBIC_INI = Path(__file__).resolve().parents[3] / "alembic.ini"
 
-# One scratch database per xdist worker, so a parallel run does not have two
-# tests creating and dropping the same schema underneath each other.
+# One per xdist worker, so a parallel run does not drop a schema in use.
 SCRATCH_DATABASE = f"migrations_test_{os.environ.get('PYTEST_XDIST_WORKER', 'gw')}"
 
 SERVER_URL, _, _ = config.DATABASE_URL.rpartition("/")
@@ -40,12 +39,7 @@ pytestmark = [
 
 
 def alembic_config(url: str) -> Config:
-    """The project's Alembic configuration, pointed at ``url``.
-
-    env.py takes the URL from ``-x url=...`` before falling back to the
-    application's own configuration, which is what lets these tests run against
-    a scratch database instead of the developer's.
-    """
+    """The project's Alembic configuration, pointed at ``url`` via -x url=..."""
     alembic_cfg = Config(str(ALEMBIC_INI))
     alembic_cfg.cmd_opts = Namespace(x=[f"url={url}"])
     return alembic_cfg
@@ -70,11 +64,8 @@ class TestMigrations:
     ):
         """The check Django makes you remember to run.
 
-        Applying every migration to an empty database must leave a schema that
-        autogenerate finds nothing to add to. If an entity was changed without
-        a migration being written, `alembic check` reports the difference and
-        this fails -- at the point the change is made, rather than at the point
-        it is deployed.
+        An entity changed without a migration fails here, when the change is
+        made, rather than at the point it is deployed.
         """
         alembic_cfg = alembic_config(empty_database)
 
@@ -89,8 +80,7 @@ class TestMigrations:
             )
 
     def test_every_migration_can_be_undone(self, empty_database: str):
-        # A migration that cannot be reversed is one a bad deployment cannot be
-        # backed out of, so downgrade is exercised rather than assumed.
+        # A bad deployment can only be backed out of if downgrade works.
         alembic_cfg = alembic_config(empty_database)
 
         command.upgrade(alembic_cfg, "head")

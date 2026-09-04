@@ -41,8 +41,7 @@ class TestJobLifecycle:
         assert job.error == "the connection dropped"
 
     def test_every_move_stamps_the_modification_time(self):
-        # A client polling the job has nothing else to tell it that the job
-        # moved at all.
+        # A client polling the job has nothing else to tell it that it moved.
         job = job_in(JobStatus.PENDING)
 
         job.start(LATER)
@@ -58,11 +57,7 @@ class TestIllegalTransitions:
 
     @pytest.mark.parametrize("move", ["start", "succeed", "fail"])
     def test_nothing_follows_a_job_that_succeeded(self, move):
-        """SUCCEEDED is terminal.
-
-        The caller has already polled that result and acted on it, so a late
-        redelivery must not be allowed to rewrite the answer they were given.
-        """
+        """SUCCEEDED is terminal: a late redelivery must not rewrite it."""
         job = job_in(JobStatus.SUCCEEDED)
         arguments = ("late", AT) if move == "fail" else (AT,)
 
@@ -93,9 +88,8 @@ class TestRedelivery:
     """The broker decides what is retried, so the job has to allow for it."""
 
     def test_a_failed_job_can_be_run_again(self):
-        # An unexpected error is recorded and re-raised for the broker to
-        # redeliver; the job that comes back is FAILED and must be able to
-        # start over.
+        # An unexpected error is recorded and re-raised for redelivery, so the
+        # job that comes back is FAILED and must be able to start over.
         job = job_in(JobStatus.FAILED)
 
         job.start(LATER)
