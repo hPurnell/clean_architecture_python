@@ -6,8 +6,7 @@ from app.auth.service.argon2_password_service import Argon2PasswordService
 PASSWORD = "correct horse battery staple"
 
 
-# Costs are turned right down: these tests are about what the adapter does with
-# the library's answers, not about how long a real login should take.
+# Costs turned right down: these test the adapter, not the KDF's cost.
 def cheap_password_service(**parameters) -> Argon2PasswordService:
     return Argon2PasswordService(
         PasswordHasher(
@@ -42,14 +41,9 @@ class TestArgon2PasswordService:
     def test_the_same_password_hashes_differently_every_time(
         self, password_service: Argon2PasswordService
     ):
-        # Each hash carries its own salt, so equal passwords do not give
-        # themselves away by having equal hashes.
-        #
-        # This pins a contract property of AbstractPasswordService ("salted per
-        # call"), not argon2-cffi's behaviour: today the assertion passes
-        # trivially, but it is what fails if the adapter is ever swapped for one
-        # that uses a fixed salt or memoises results. Kept to one assertion --
-        # verifying `second` would only duplicate test_verify_accepts_the_password.
+        # Pins a contract property of AbstractPasswordService ("salted per
+        # call"), not argon2-cffi's: it fails if the adapter ever memoises or
+        # fixes the salt.
         assert password_service.hash(PASSWORD) != password_service.hash(PASSWORD)
 
     def test_a_hash_is_verified_with_the_parameters_it_was_made_with(self):

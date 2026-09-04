@@ -19,8 +19,7 @@ from app.items.messaging.item_commands import (
     to_update_command,
 )
 
-# The value fields an item command carries. Kept here as a literal so a change
-# to the wire contract has to be made deliberately in two places.
+# A literal, so a change to the wire contract has to be made in two places.
 ITEM_VALUE_FIELDS = {"value_str", "value_int", "value_float"}
 
 JOB_ID = "9f2c1d8e4b7a4b0f8a1c6d3e5f7a9b2c"
@@ -91,8 +90,6 @@ class TestItemCommands:
         }
 
     def test_only_the_commands_that_change_an_item_carry_its_values(self):
-        # Create and Update carry the value fields; Delete, which only needs an
-        # id, must not grow them.
         assert ITEM_VALUE_FIELDS <= {f.name for f in fields(CreateItemCommand)}
         assert ITEM_VALUE_FIELDS <= {f.name for f in fields(UpdateItemCommand)}
         assert ITEM_VALUE_FIELDS.isdisjoint(
@@ -108,8 +105,8 @@ class TestItemCommands:
         ],
     )
     def test_a_command_survives_the_broker(self, command):
-        # The subscriber receives JSON and pydantic rebuilds the dataclass from
-        # it, so composed commands have to decode as flatly as written-out ones.
+        # Pydantic rebuilds these from JSON, so composed commands must decode
+        # as flatly as written-out ones.
         adapter = TypeAdapter(type(command))
 
         decoded = adapter.validate_python(json.loads(adapter.dump_json(command)))

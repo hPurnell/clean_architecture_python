@@ -51,18 +51,15 @@ class BaseRepository(Generic[TEntity, TDataclass]):
         self, pk_values: Union[Any, dict[str, Any]]
     ) -> Optional[TEntity]:
         if isinstance(pk_values, dict):
-            # Ensure all primary key fields are present in the input dictionary.
             missing_fields = [
                 field for field in self.pk_fields if field not in pk_values
             ]
             if missing_fields:
                 raise ValueError(f"Missing primary key fields: {missing_fields}")
 
-            # Create the dictionary directly, no need to convert it to a tuple
             pk_dict = {field: pk_values[field] for field in self.pk_fields}
 
         else:
-            # For a single value as primary key input
             if len(self.pk_fields) != 1:
                 raise ValueError(
                     "Expected composite key (dict with fields "
@@ -70,7 +67,6 @@ class BaseRepository(Generic[TEntity, TDataclass]):
                 )
             pk_dict = {self.pk_fields[0]: pk_values}
 
-        # Use the named primary key dictionary for session.get
         return self.session.get(self.entity_class, pk_dict)
 
     def create(self, dataclass_instance: TDataclass) -> TDataclass:

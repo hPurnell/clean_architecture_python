@@ -10,8 +10,7 @@ from app.items.messaging.item_command_subscriber import create_item_command_rout
 
 def create_faststream_app() -> FastStream:
     broker = create_broker()
-    # A router of its own, so this app's subscribers are not shared with any
-    # other app built in the same process. See create_item_command_router.
+    # Its own router, so subscribers are not shared with another app.
     broker.include_router(create_item_command_router())
     return FastStream(broker)
 

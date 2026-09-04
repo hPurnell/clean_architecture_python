@@ -14,10 +14,7 @@ class NewItemDTO(DataclassDTO[Item]):
 
 
 class UpdateItemDTO(DataclassDTO[Item]):
-    # The timestamps are the store's own: created_date records when the item
-    # was first written and modified_date is stamped on every change, so
-    # neither is a caller's to send. What is left is the id, which says which
-    # item to change, and the values that are being changed.
+    # The timestamps are the store's own, not a caller's to send.
     config = DTOConfig(
         exclude={"created_date", "modified_date"},
         rename_strategy="pascal",

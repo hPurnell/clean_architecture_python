@@ -13,8 +13,7 @@ from app.shared.persistence.repository import BaseRepository
 class JobEntity(Base):
     __tablename__ = "jobs"
 
-    # Not autoincremented: the id is minted by the service before the command
-    # that carries it is published.
+    # Minted by the service before the command carrying it is published.
     id = Column(String(32), primary_key=True)
     command = Column(String(100), nullable=False)
     status = Column(SqlEnum(JobStatus), nullable=False)  # type: Column[JobStatus]

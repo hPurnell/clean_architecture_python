@@ -13,9 +13,8 @@ DELETE_ITEM_COMMAND = "delete_item"
 class ItemCommandDispatcher:
     """Starts an item command as a background job and returns the job.
 
-    The job is recorded before the command is published, so that a subscriber
-    cannot reach it before it exists. Items may start jobs; the jobs context
-    knows nothing about items.
+    The job is recorded before the command is published, so a subscriber
+    cannot reach it before it exists.
     """
 
     def __init__(
@@ -42,8 +41,7 @@ class ItemCommandDispatcher:
         try:
             await publication
         except Exception as exc:
-            # Nothing will ever pick the command up, so the job is failed here
-            # rather than left pending for a client that would poll it forever.
+            # Nothing will pick the command up, so the job must not stay pending.
             self._job_service.fail_job(job.id, f"Unable to publish command: {exc}")
             raise
         return job

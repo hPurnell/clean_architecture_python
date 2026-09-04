@@ -96,8 +96,7 @@ class TestJWTAuthenticationMiddleware:
     async def test_the_token_error_message_reaches_the_response(
         self, middleware: JWTAuthenticationMiddleware
     ):
-        # A bad token carries the domain error's text; a malformed header does
-        # not, so the two failures stay distinguishable in logs.
+        # A bad token carries the domain error's text; a bad header does not.
         with pytest.raises(NotAuthorizedException, match="Invalid token"):
             await middleware.authenticate_request(
                 _FakeConnection({"Authorization": "Bearer not.a.jwt"})  # type: ignore[arg-type]

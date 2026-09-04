@@ -133,9 +133,8 @@ class TestJWT:
     ):
         """Regression guard: a freshly issued token is valid right now.
 
-        Encoding with a naive local ``datetime`` object rather than a POSIX
-        timestamp makes PyJWT read the wall clock as UTC, pushing ``iat`` into
-        the future and making every just-minted token fail to decode.
+        A naive local datetime rather than a POSIX timestamp makes PyJWT read
+        the wall clock as UTC, pushing iat into the future.
         """
         before = datetime.now(timezone.utc).timestamp()
         # The decode itself would raise ImmatureSignatureError on a future iat.

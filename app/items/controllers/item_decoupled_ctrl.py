@@ -11,11 +11,7 @@ from app.jobs.domain.job import Job
 
 
 class ItemsCommandsDecoupledCtrl(Controller):
-    """The same commands as /items, published instead of carried out.
-
-    Each handler answers 202 with a job; the client polls /jobs/{job_id} and
-    follows the job's Result to the item.
-    """
+    """The same commands as /items, published instead of carried out."""
 
     path = "/items_decoupled"
     tags = ["Items Commands Decoupled"]

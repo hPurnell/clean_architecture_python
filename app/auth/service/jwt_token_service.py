@@ -40,7 +40,5 @@ class JwtTokenService(AbstractTokenService):
         try:
             return Token(**payload)
         except TypeError as e:
-            # A correctly-signed token whose payload is not the shape we issue
-            # -- a missing sub/iat/exp, or an unexpected claim -- is still a
-            # token this service will not accept.
+            # Correctly signed, but not the shape this service issues.
             raise InvalidTokenError() from e

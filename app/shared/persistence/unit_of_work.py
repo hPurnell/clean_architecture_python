@@ -7,8 +7,7 @@ from app.shared.domain.unit_of_work import AbstractUnitOfWork
 
 TRepository = TypeVar("TRepository")
 
-# A repository factory is given the active session and returns a repository
-# bound to it, so that every repository in one unit of work shares a transaction.
+# Bound to the active session, so every repository shares one transaction.
 RepositoryFactory = Callable[[Session], Any]
 
 

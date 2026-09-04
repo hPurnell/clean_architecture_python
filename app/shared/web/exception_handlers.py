@@ -55,8 +55,7 @@ def domain_error_handler(
     )
 
 
-# Typed as Litestar takes it: the mapping is keyed by status code or exception
-# type, and this application registers one entry.
+# Typed as Litestar takes it: keyed by status code or exception type.
 EXCEPTION_HANDLERS: MutableMapping[
     int | type[Exception], Callable[[Request[Any, Any, Any], Any], Response[Any]]
 ] = {DomainError: domain_error_handler}

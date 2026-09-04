@@ -32,6 +32,5 @@ class TestFakeUserRepository:
         assert repository.get_user("nobody@example.com") is None
 
     def test_lookup_is_case_sensitive(self, repository: FakeUserRepository):
-        # The repository matches verbatim; normalising the case is the
-        # caller's job (AuthService lowercases before it gets here).
+        # Matching is verbatim; AuthService lowercases before it gets here.
         assert repository.get_user(USERNAME.upper()) is None

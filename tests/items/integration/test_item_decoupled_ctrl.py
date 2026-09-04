@@ -5,8 +5,7 @@ import pytest
 from litestar import Litestar
 from litestar.testing import TestClient
 
-# The command is carried out by a subscriber in its own task, so the job is the
-# only thing the test can synchronise on.
+# The subscriber runs in its own task, so the job is the only thing to wait on.
 JOB_TIMEOUT_SECONDS = 10.0
 JOB_POLL_SECONDS = 0.05
 
@@ -38,8 +37,7 @@ def dispatch(client: TestClient[Litestar], method: str, path: str, **kwargs) -> 
     return str(job["Id"])
 
 
-# Shares the RabbitMQ queues with TestItemCtrlIntegration; the same xdist group
-# keeps every item integration test on a single worker, serialised.
+# Shares TestItemCtrlIntegration's queues, so it shares its xdist group.
 @pytest.mark.xdist_group("item_integration")
 @pytest.mark.integration
 class TestItemDecoupledCtrlIntegration:
@@ -106,8 +104,7 @@ class TestItemDecoupledCtrlIntegration:
     def test_a_command_that_cannot_be_carried_out_fails_its_job(
         self, fixture_integration_test_client_with_auth: TestClient[Litestar]
     ):
-        # The request itself is accepted — nothing has looked for the item yet.
-        # The failure is reported on the job, and only there.
+        # Accepted: nothing has looked for the item yet. The job reports it.
         client = fixture_integration_test_client_with_auth
 
         job_id = dispatch(client, "DELETE", "/items_decoupled/999999")

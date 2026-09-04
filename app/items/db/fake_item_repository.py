@@ -6,8 +6,8 @@ from app.items.domain.item import Item
 
 class FakeItemRepository(AbstractItemRepository):
     def __init__(self) -> None:
-        self.items: dict[int, Item] = {}  # In-memory storage for items
-        self.next_id = 1  # To simulate auto-incrementing IDs
+        self.items: dict[int, Item] = {}
+        self.next_id = 1
 
     def create(self, obj: Item) -> Item:
         obj.id = self.next_id

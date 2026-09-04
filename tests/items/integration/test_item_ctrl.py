@@ -5,10 +5,8 @@ from litestar import Litestar
 from litestar.testing import TestClient
 
 
-# Every item integration app boots a broker bound to the same RabbitMQ queues,
-# so these must not run concurrently with each other under `pytest -n auto`.
-# xdist_group (with --dist loadgroup, set in pytest.ini) keeps the whole group
-# on one worker; it is ignored on a plain single-process run.
+# These share RabbitMQ queues, so they must not run concurrently under
+# `pytest -n auto`. xdist_group keeps them on one worker, given --dist loadgroup.
 @pytest.mark.xdist_group("item_integration")
 @pytest.mark.integration
 class TestItemCtrlIntegration:
@@ -122,9 +120,7 @@ class TestItemCtrlIntegration:
     ):
         """A PATCH carrying two fields must not blank the third.
 
-        Every other patch test here sends a whole item, which is the one shape
-        that hid this: the endpoint answered 200 and nulled everything the
-        caller had left out.
+        Every other patch test here sends a whole item, which is what hid this.
         """
         client = fixture_integration_test_client_with_auth
 

@@ -7,9 +7,7 @@ TRepository = TypeVar("TRepository")
 
 
 class InMemoryUnitOfWork(AbstractUnitOfWork):
-    # Repositories are injected rather than created here, so how long the data
-    # survives is a wiring decision: the test container binds them at app scope,
-    # giving each test app instance its own isolated store.
+    # Injected rather than created here, so their lifetime is a wiring decision.
     def __init__(self, repositories: Mapping[Type[Any], Any]) -> None:
         self._repositories = dict(repositories)
 

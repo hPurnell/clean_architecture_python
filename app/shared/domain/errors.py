@@ -1,6 +1,5 @@
-# Free of transport concepts on purpose: nothing in a domain or service module
-# should raise an HTTPException. The web layer maps these to status codes in
-# app.shared.web.exception_handlers; the messaging layer lets them propagate.
+# Free of transport concepts: the web layer maps these to status codes, and
+# the messaging layer lets them propagate.
 class DomainError(Exception):
     """Base class for every error the domain and service layers raise."""
 

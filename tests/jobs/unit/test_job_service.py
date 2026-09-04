@@ -105,6 +105,26 @@ class TestJobService:
         assert failed_job.status is JobStatus.FAILED
         assert failed_job.error == "RuntimeError: the connection dropped"
 
+    def test_a_redelivered_command_can_run_a_failed_job_again(
+        self, job_service: JobService
+    ):
+        # An unexpected error records the failure and re-raises so that the
+        # broker redelivers. The job that comes back is FAILED, so tracking it
+        # again has to be allowed or the retry could never happen.
+        job = job_service.create_job("update_item")
+        with pytest.raises(RuntimeError):
+            with job_service.track(job.id):
+                raise RuntimeError("the connection dropped")
+
+        with job_service.track(job.id) as retried:
+            retried.result = "7"
+
+        finished_job = job_service.get_job(job.id)
+        assert finished_job.status is JobStatus.SUCCEEDED
+        assert finished_job.result == "7"
+        # The first attempt's error is not still hanging off a job that worked.
+        assert finished_job.error is None
+
     def test_a_job_that_was_never_published_is_failed(self, job_service: JobService):
         job = job_service.create_job("create_item")
 

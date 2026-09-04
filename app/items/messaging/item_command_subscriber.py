@@ -16,17 +16,14 @@ from app.jobs.service.job_service import JobService
 
 logger = logging.getLogger(__name__)
 
-# A transport adapter and nothing more: decode the command, call the same
-# ItemService the HTTP controller uses, and let track() record the outcome
-# against the job the caller is polling.
+# A transport adapter only: the same ItemService the HTTP controller uses.
 
 
 def create_item_command_router() -> Any:
     """Build a router carrying the item command subscribers.
 
-    A factory, not a module-level router: a shared router would hand the same
-    subscriber objects to every app built in the process, leaving stale
-    consumers on the queues that swallow commands the newest app published.
+    A factory, not a module-level router: a shared one would leave stale
+    consumers on the queues of every app built in the process.
     """
     router = create_router("item_service_")
 

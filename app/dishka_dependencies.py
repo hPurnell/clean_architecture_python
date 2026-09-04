@@ -30,8 +30,8 @@ from app.shared.persistence.engine import create_session_factory
 from app.shared.persistence.in_memory_unit_of_work import InMemoryUnitOfWork
 from app.shared.persistence.unit_of_work import SqlAlchemyUnitOfWork
 
-# Repository port -> factory taking the unit of work's session. Adding an
-# aggregate means adding a line here; the unit of work itself does not change.
+# Repository port -> factory taking the unit of work's session. An aggregate
+# is added here; the unit of work itself does not change.
 REPOSITORY_FACTORIES: Mapping[Type[Any], Callable[[Session], Any]] = {
     AbstractItemRepository: ItemRepository,
     AbstractJobRepository: JobRepository,
@@ -100,8 +100,7 @@ class AppProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def item_command_publisher(
         self,
-        # The broker class is picked from configuration at import time, so it
-        # is a variable as far as the type checker is concerned.
+        # Picked from configuration at import time, so a variable to mypy.
         broker: Broker,  # type: ignore[valid-type]
     ) -> AbstractItemCommandPublisher:
         return ItemCommandPublisher(broker)
@@ -122,9 +121,7 @@ class UnitTestProvider(Provider):
     def password_service(self) -> AbstractPasswordService:
         return Argon2PasswordService()
 
-    # Application scope, so the in-memory data survives for the lifetime of one
-    # app instance — and no longer than that. Each test builds its own app and
-    # therefore gets its own store, with no state shared between them.
+    # App scope, so each test's app gets its own store and shares no state.
     @provide(scope=Scope.APP)
     def fake_item_repository(self) -> FakeItemRepository:
         return FakeItemRepository()
@@ -179,8 +176,7 @@ class UnitTestProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def item_command_publisher(
         self,
-        # The broker class is picked from configuration at import time, so it
-        # is a variable as far as the type checker is concerned.
+        # Picked from configuration at import time, so a variable to mypy.
         broker: Broker,  # type: ignore[valid-type]
     ) -> AbstractItemCommandPublisher:
         return ItemCommandPublisher(broker)
@@ -255,8 +251,7 @@ class IntegrationTestProvider(Provider):
     @provide(scope=Scope.REQUEST)
     def item_command_publisher(
         self,
-        # The broker class is picked from configuration at import time, so it
-        # is a variable as far as the type checker is concerned.
+        # Picked from configuration at import time, so a variable to mypy.
         broker: Broker,  # type: ignore[valid-type]
     ) -> AbstractItemCommandPublisher:
         return ItemCommandPublisher(broker)

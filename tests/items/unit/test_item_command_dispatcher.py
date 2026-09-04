@@ -100,8 +100,7 @@ class TestItemCommandDispatcher:
     async def test_a_command_that_cannot_be_published_fails_its_job(
         self, job_service: JobService
     ):
-        # Nothing will ever run the command, so the client must not be left
-        # polling a job that stays pending for ever.
+        # Nothing will run the command, so the client must not poll for ever.
         dispatcher = ItemCommandDispatcher(UnreachablePublisher(), job_service)
 
         with pytest.raises(ConnectionError):

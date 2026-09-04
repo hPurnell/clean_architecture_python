@@ -50,8 +50,7 @@ def fixture_integration_test_client_with_auth(
 
 @pytest.fixture(scope="function")
 def fixture_valid_credentials():
-    # The stored user only has the hash, so the password comes from the
-    # constant the fake repository seeded itself from.
+    # The stored user only has the hash, so the password comes from the seed.
     mock_user_repository: FakeUserRepository = FakeUserRepository()
     user = mock_user_repository.get_user("john.doe@example.com")
     assert user is not None
@@ -65,15 +64,12 @@ def fixture_invalid_credentials():
 
 @pytest.fixture
 def fixture_new_item() -> dict[str, Any]:
-    # Create a NewItem instance and return as a dictionary with PascalCase fields
     item = {"ValueStr": "Example String", "ValueInt": 42, "ValueFloat": 123.45}
-    return item  # Return the dictionary directly
+    return item
 
 
 @pytest.fixture
 def fixture_update_item() -> dict[str, Any]:
-    # Create an UpdateItem instance and return as a dictionary with
-    # PascalCase fields and date strings
     item = {
         "Id": None,  # Will be filled in by the test
         "ValueStr": "Updated String",
@@ -82,4 +78,4 @@ def fixture_update_item() -> dict[str, Any]:
         "CreatedDate": datetime(2024, 12, 31, 13, 17, 29).isoformat(),
         "ModifiedDate": datetime(2024, 12, 31, 13, 45, 10).isoformat(),
     }
-    return item  # Return the dictionary directly
+    return item

@@ -282,7 +282,6 @@ order they would be worth closing:
   `collect_new_events` on the unit of work and nothing subscribes in process.
   This is the half of the Cosmic Python progression the project stops short
   of.
-- No value objects; the models are primitives throughout.
 
 ### Authorization
 - Authentication answers "who are you" and stops there. A token carries

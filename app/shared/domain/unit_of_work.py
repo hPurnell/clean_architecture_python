@@ -5,10 +5,8 @@ from typing import Optional, Type, TypeVar
 TRepository = TypeVar("TRepository")
 
 
-# A transaction boundary for the whole application rather than for one
-# aggregate, so this port names no aggregate: implementations are handed the
-# repositories they expose, and callers look one up by its port type. Adding an
-# aggregate means registering a repository in the composition root, nothing here.
+# A transaction boundary for the application rather than for one aggregate,
+# so callers look a repository up by its port type.
 class AbstractUnitOfWork(ABC):
     @abstractmethod
     def __enter__(self) -> "AbstractUnitOfWork": ...
@@ -29,8 +27,4 @@ class AbstractUnitOfWork(ABC):
 
     @abstractmethod
     def repository(self, port: Type[TRepository]) -> TRepository:
-        """Return the repository registered for ``port``.
-
-        Raises:
-            KeyError: if no repository was registered for that port.
-        """
+        """Return the repository registered for ``port``, or raise KeyError."""

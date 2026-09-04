@@ -6,13 +6,8 @@ from app.items.domain.item import Item
 class AbstractItemCommandPublisher(ABC):
     """Port for dispatching item commands to another process.
 
-    Implementations accept domain objects; translating them into wire-format
-    messages is the adapter's job, so the domain never sees a message schema.
-
-    Every method takes the id of the job the command belongs to. The publisher
-    does not interpret it — it is carried through to whoever runs the command,
-    so that the outcome can be reported against the handle the caller was
-    given.
+    Takes domain objects, so the domain never sees a message schema. The
+    ``job_id`` is carried through so the outcome can be reported against it.
     """
 
     @abstractmethod

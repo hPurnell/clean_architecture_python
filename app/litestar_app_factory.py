@@ -24,9 +24,8 @@ from app.jobs.controllers import JobController
 from app.shared.web.exception_handlers import EXCEPTION_HANDLERS
 
 
-# The three factories differ in one thing only -- which set of components the
-# container is assembled from. Everything that decides how the application
-# behaves at the edge belongs in _build_app, where no caller can vary it.
+# The factories differ only in which components the container is assembled
+# from; how the app behaves at the edge is _build_app's, and no caller's.
 def create_app() -> Litestar:
     return _build_app(AppProvider())
 
@@ -41,17 +40,14 @@ def create_integration_test_app() -> Litestar:
 
 def _build_app(provider: Provider) -> Litestar:
     app = Litestar(
-        # Read from configuration rather than hardcoded: debug mode serves
-        # tracebacks and internal state to the caller.
+        # Never hardcoded: debug serves tracebacks and internals to the caller.
         debug=config.DEBUG,
         route_handlers=get_route_handlers(),
         openapi_config=create_openapi_config(),
         exception_handlers=EXCEPTION_HANDLERS,
-        # Built here rather than accepted as an argument. Authentication a
-        # caller can leave out is authentication that eventually is left out,
-        # and the tests build their own apps -- so an app assembled without it
-        # would serve every route openly with the whole suite still green.
-        # Routes opt out individually with `exclude_from_auth`.
+        # Built here, not passed in: authentication a caller can leave out is
+        # eventually left out, and the tests build their own apps. Routes opt
+        # out individually with `exclude_from_auth`.
         middleware=[create_auth_middleware()],
         on_startup=[on_startup],
         on_shutdown=[on_shutdown],
@@ -75,7 +71,6 @@ def create_openapi_config() -> OpenAPIConfig:
         "BearerAuth": SecurityScheme(
             type="http",
             scheme="bearer",
-            # Optional: Specify the format of the token (e.g., JWT)
             bearer_format="JWT",
         )
     }
@@ -90,8 +85,7 @@ def create_openapi_config() -> OpenAPIConfig:
 
 
 def create_auth_middleware() -> DefineMiddleware:
-    # The middleware is built by Litestar rather than resolved from the DI
-    # container, so the token service is passed in explicitly here.
+    # Built by Litestar, not the container, so the token service is explicit.
     return DefineMiddleware(
         JWTAuthenticationMiddleware,
         exclude="schema",

@@ -1,12 +1,12 @@
 import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
-from datetime import datetime
 from uuid import uuid4
 
 from app.jobs.domain.abstract_job_repository import AbstractJobRepository
 from app.jobs.domain.errors import JobNotFoundError, JobNotPersistedError
-from app.jobs.domain.job import Job, JobStatus
+from app.jobs.domain.job import Job
+from app.shared.clock import utc_now
 from app.shared.domain.errors import DomainError
 from app.shared.domain.unit_of_work import AbstractUnitOfWork
 
@@ -33,11 +33,9 @@ class JobService:
     def create_job(self, command: str) -> Job:
         """Record an accepted command and return the handle the client polls.
 
-        The id is generated here rather than by the database: the command that
-        carries it has to be published with it, so it must exist before any
-        worker could possibly see the job.
+        The id is minted here because the command has to be published with it.
         """
-        now = datetime.utcnow()
+        now = utc_now()
         created_job = self._jobs.create(
             Job(id=uuid4().hex, command=command, created_date=now, modified_date=now)
         )
@@ -54,18 +52,12 @@ class JobService:
     def track(self, job_id: str) -> Iterator[Job]:
         """Run the body as the work of ``job_id``, recording how it turns out.
 
-        The body may set ``job.result`` to the identifier of whatever it
-        produced; the job is stored as SUCCEEDED when the body returns, and as
-        FAILED, with the error message, when it raises.
-
-        A ``DomainError`` ends the job here: redelivering the command would
-        fail in exactly the same way, so the job record becomes the report and
-        the caller acknowledges the message. Any other exception is re-raised
-        once the failure has been recorded, on the assumption that it may be
-        transient and the command is worth retrying.
+        The body may set ``job.result``. A DomainError ends the job here, since
+        redelivery would fail identically; anything else is recorded and
+        re-raised for the broker to retry.
         """
         job = self.get_job(job_id)
-        job.status = JobStatus.RUNNING
+        job.start(utc_now())
         self._save(job)
         try:
             yield job
@@ -77,25 +69,18 @@ class JobService:
             self._record_failure(job, f"{type(exc).__name__}: {exc}")
             raise
         else:
-            job.status = JobStatus.SUCCEEDED
+            job.succeed(utc_now())
             self._save(job)
 
     def _record_failure(self, job: Job, error: str) -> Job:
-        # Discard whatever the work left uncommitted: a transaction that failed
-        # part way through must not be allowed to take the record of its own
-        # failure down with it. Work the command committed before it failed is
-        # already durable and is not this method's to undo.
+        # A transaction that failed part way through must not take the record
+        # of its own failure down with it.
         self._unit_of_work.rollback()
-        job.status = JobStatus.FAILED
-        job.error = error
+        job.fail(error, utc_now())
         return self._save(job)
 
     def _save(self, job: Job) -> Job:
-        # Stamped here rather than left to the column's ``onupdate``: the
-        # repository writes every field explicitly, which suppresses it, and
-        # the in-memory repository has no clock of its own at all. A client
-        # polling a job needs to see this move.
-        job.modified_date = datetime.utcnow()
+        # Only called on a job that has just moved, which stamped modified_date.
         updated_job = self._jobs.update(job)
         if updated_job is None:
             raise JobNotPersistedError(f"Unable to update job: {job.id}")

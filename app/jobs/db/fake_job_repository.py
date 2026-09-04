@@ -10,8 +10,7 @@ class FakeJobRepository(AbstractJobRepository):
         self.jobs: dict[str, Job] = {}
 
     def create(self, obj: Job) -> Job:
-        # Stored as a copy, so that a caller mutating the job it holds does not
-        # silently change the stored one the way a real repository would not.
+        # A copy, so a caller mutating its job does not change the stored one.
         self.jobs[obj.id] = replace(obj)
         return obj
 
