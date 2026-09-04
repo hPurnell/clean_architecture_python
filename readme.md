@@ -274,15 +274,14 @@ What a reference implementation leaves out is worth stating. Roughly in the
 order they would be worth closing:
 
 ### The domain ring is thin
-- `Item`, `Job` and `User` are dataclasses with no methods: every rule about
-  them lives in a service.
-- `JobStatus` has a real lifecycle (`PENDING` → `RUNNING` → `SUCCEEDED` |
-  `FAILED`), but nothing rejects an illegal transition.
+- `User` is still a dataclass with no methods, and its one rule — that a
+  username is canonically lowercase — lives in `AuthService` rather than in a
+  type of its own. `Item` and `Job` now carry their own rules.
 - No domain events and no message bus. The broker carries commands issued by
   a controller, never events raised by an aggregate, so there is no
   `collect_new_events` on the unit of work and nothing subscribes in process.
-  This is the half of the Cosmic Python progression the project stops short
-  of.
+  Deliberately, for now: nothing here fans out from a state change, so every
+  event would be raised to an empty room.
 
 ### Authorization
 - Authentication answers "who are you" and stops there. A token carries
